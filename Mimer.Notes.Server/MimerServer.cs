@@ -117,6 +117,7 @@ namespace Mimer.Notes.Server {
 					response.SymmetricAlgorithm = user.SymmetricAlgorithm;
 					response.SymmetricKey = user.SymmetricKey;
 					response.Data = user.Data;
+					response.Config = user.ClientConfig;
 					response.Size = user.Size;
 					response.NoteCount = user.NoteCount;
 					response.MaxTotalBytes = userType.MaxTotalBytes;
@@ -141,6 +142,7 @@ namespace Mimer.Notes.Server {
 					var userType = GetUserType(user.TypeId);
 					var response = new UserDataResponse();
 					response.Data = user.Data;
+					response.Config = user.ClientConfig;
 					response.Size = user.Size;
 					response.NoteCount = user.NoteCount;
 					response.MaxTotalBytes = userType.MaxTotalBytes;

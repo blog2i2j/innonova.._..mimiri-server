@@ -26,6 +26,15 @@ namespace Mimer.Notes.Model.Responses {
 			}
 		}
 
+		public string Config {
+			get {
+				return _json.String("config");
+			}
+			set {
+				_json.String("config", value);
+			}
+		}
+
 		public long Size {
 			get {
 				return _json.Int64("size");

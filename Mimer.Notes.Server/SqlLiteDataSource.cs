@@ -156,7 +156,7 @@ namespace Mimer.Notes.Server {
 				command.Parameters.AddWithValue("$username", username);
 				using var reader = await command.ExecuteReaderAsync();
 				if (await reader.ReadAsync()) {
-					return new MimerUser(new JsonObject(reader.GetString(0)), reader.GetGuid(1), 0, 0, 0);
+					return new MimerUser(new JsonObject(reader.GetString(0)), reader.GetGuid(1), 0, 0, 0, "{}", "{}");
 				}
 			}
 			catch (Exception ex) {

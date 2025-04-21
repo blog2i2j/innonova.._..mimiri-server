@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS public."mimer_user" (
   username_upper character varying(50) COLLATE pg_catalog."default" GENERATED ALWAYS AS (upper((username)::text)) STORED,
 	user_type bigint NOT NULL DEFAULT 1,
   data text NOT NULL,
+	server_config text NOT NULL DEFAULT '{}',
+	client_config text NOT NULL DEFAULT '{}',
 	created timestamp without time zone NOT NULL DEFAULT current_timestamp,
 	modified timestamp without time zone NOT NULL DEFAULT current_timestamp,
   CONSTRAINT "mimer_user_username" UNIQUE (username),
@@ -264,10 +266,10 @@ END;$$;
 			return json.ToString();
 		}
 
-		private MimerUser DecryptUser(string data, Guid stableId, long size, long noteCount, long typeId) {
+		private MimerUser DecryptUser(string data, Guid stableId, long size, long noteCount, long typeId, string serverConfig, string clientConfig) {
 			var json = new JsonObject(data);
 			if (json.Has("publicKey")) {
-				return new MimerUser(json, stableId, size, noteCount, typeId);
+				return new MimerUser(json, stableId, size, noteCount, typeId, serverConfig, clientConfig);
 			}
 			var aes = Aes.Create();
 			aes.KeySize = 256;
@@ -277,7 +279,7 @@ END;$$;
 			using (ICryptoTransform transform = aes.CreateDecryptor()) {
 				using (MemoryStream stream = new MemoryStream(cipherText)) {
 					using (CryptoStream cryptoStream = new CryptoStream(stream, transform, CryptoStreamMode.Read)) {
-						return new MimerUser(new JsonObject(Encoding.UTF8.GetString(ReadToEnd(cryptoStream))), stableId, size, noteCount, typeId);
+						return new MimerUser(new JsonObject(Encoding.UTF8.GetString(ReadToEnd(cryptoStream))), stableId, size, noteCount, typeId, serverConfig, clientConfig);
 					}
 				}
 			}
@@ -352,11 +354,11 @@ END;$$;
 		public async Task<MimerUser?> GetUser(string username) {
 			try {
 				using var command = _postgres.CreateCommand();
-				command.CommandText = @"SELECT u.data, u.id, s.size, s.notes, u.user_type FROM mimer_user as u INNER JOIN user_stats as s ON s.user_id = u.id WHERE u.username_upper = upper(@username)";
+				command.CommandText = @"SELECT u.data, u.id, s.size, s.notes, u.user_type, u.server_config, u.client_config FROM mimer_user as u INNER JOIN user_stats as s ON s.user_id = u.id WHERE u.username_upper = upper(@username)";
 				command.Parameters.AddWithValue("@username", username);
 				using var reader = await command.ExecuteReaderAsync();
 				if (await reader.ReadAsync()) {
-					return DecryptUser(reader.GetString(0), reader.GetGuid(1), reader.GetInt64(2), reader.GetInt64(3), reader.GetInt64(4));
+					return DecryptUser(reader.GetString(0), reader.GetGuid(1), reader.GetInt64(2), reader.GetInt64(3), reader.GetInt64(4), reader.GetString(5), reader.GetString(6));
 				}
 			}
 			catch (Exception ex) {

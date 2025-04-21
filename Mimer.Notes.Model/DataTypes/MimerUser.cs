@@ -7,17 +7,21 @@ namespace Mimer.Notes.Model.DataTypes {
 		private long _size;
 		private long _noteCount;
 		private long _typeId;
+		private string _serverConfig = "{}";
+		private string _clientConfig = "{}";
 
 		public MimerUser() {
 			_json = new JsonObject();
 		}
 
-		public MimerUser(JsonObject json, Guid stableId, long size, long noteCount, long typeId) {
+		public MimerUser(JsonObject json, Guid stableId, long size, long noteCount, long typeId, string serverConfig, string clientConfig) {
 			_json = json;
 			_stableId = stableId;
 			_size = size;
 			_noteCount = noteCount;
 			_typeId = typeId;
+			_serverConfig = serverConfig;
+			_clientConfig = clientConfig;
 		}
 
 		public string Username {
@@ -179,6 +183,18 @@ namespace Mimer.Notes.Model.DataTypes {
 		public long TypeId {
 			get {
 				return _typeId;
+			}
+		}
+
+		public string ServerConfig {
+			get {
+				return _serverConfig;
+			}
+		}
+
+		public string ClientConfig {
+			get {
+				return _clientConfig;
 			}
 		}
 
