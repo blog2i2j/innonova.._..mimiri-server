@@ -412,9 +412,9 @@ namespace Mimer.Notes.Server {
 
 				using var command = connection.CreateCommand();
 				command.CommandText = @"
-SELECT mimer_note.key_name, mimer_note_item.version, mimer_note_item.item_type, mimer_note_item.data 
-FROM mimer_note 
-INNER JOIN mimer_note_item ON mimer_note_item.note_id = mimer_note.id 
+SELECT mimer_note.key_name, mimer_note_item.version, mimer_note_item.item_type, mimer_note_item.data
+FROM mimer_note
+INNER JOIN mimer_note_item ON mimer_note_item.note_id = mimer_note.id
 WHERE mimer_note.id = $id";
 				command.Parameters.AddWithValue("$id", id);
 				using var reader = await command.ExecuteReaderAsync();
@@ -630,6 +630,10 @@ WHERE mimer_note.id = $id";
 		}
 
 		public Task UpdateUserStats(IEnumerable<UserStats> userStats) {
+			return Task.CompletedTask;
+		}
+
+		public Task UpdateGlobalStats(IEnumerable<GlobalStatistic> globalStats) {
 			return Task.CompletedTask;
 		}
 

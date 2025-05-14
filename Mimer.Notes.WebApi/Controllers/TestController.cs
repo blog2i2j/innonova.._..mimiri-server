@@ -28,6 +28,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 		}
 
 		[HttpGet("{testId}/begin")]
+		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 		public IActionResult Begin(string testId) {
 			lock (_testServers) {
 				if (!_testServers.ContainsKey(testId)) {
@@ -44,6 +45,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 		}
 
 		[HttpGet("{testId}/end/{keepLogs}")]
+		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 		public IActionResult End(string testId, bool keepLogs) {
 			var testContext = GetTestContext(testId);
 			if (testContext != null) {
@@ -84,6 +86,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 		}
 
 		[HttpGet("{testId}/user/pre-login/{username}")]
+		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 		public async Task<IActionResult> UserPreLogin(string testId, string username) {
 			var context = GetTestContext(testId);
 			if (context == null) {

@@ -11,6 +11,7 @@ namespace Mimer.Notes.SignalR.Controllers {
 		}
 
 		[HttpGet()]
+		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 		public IActionResult Health() {
 			return Content("OK");
 		}

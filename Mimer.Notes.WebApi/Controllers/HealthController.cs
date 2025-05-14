@@ -13,12 +13,15 @@ namespace Mimer.Notes.WebApi.Controllers {
 		}
 
 		[HttpGet()]
+		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 		public IActionResult Get() {
+			_server.RegisterAction(Info, "health");
 			return Ok("OK");
 		}
 
 		[HttpHead()]
 		public IActionResult Head() {
+			_server.RegisterAction(Info, "health:head");
 			return Ok();
 		}
 

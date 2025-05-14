@@ -25,6 +25,7 @@ namespace Mimer.Notes.Server {
 		Task<List<Guid>> GetUserIdsByKeyName(Guid keyName);
 		Task<List<VersionConflict>?> MultiApply(List<NoteAction> actions, UserStats stats);
 		Task UpdateUserStats(IEnumerable<UserStats> userStats);
+		Task UpdateGlobalStats(IEnumerable<GlobalStatistic> globalStats);
 		Task<bool> DeleteUser(Guid userId);
 	}
 }

@@ -17,6 +17,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("create")]
 		public async Task<IActionResult> Create([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "key/create");
 			var response = await _server.CreateKey(new CreateKeyRequest(json));
 			if (response == null) {
 				return Conflict();
@@ -26,6 +27,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("read-all")]
 		public async Task<IActionResult> ReadAllKeys([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "key/read-all");
 			var response = await _server.ReadAllKeys(new BasicRequest(json));
 			if (response == null) {
 				return NotFound();
@@ -35,6 +37,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("read")]
 		public async Task<IActionResult> Read([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "key/read");
 			var response = await _server.ReadKey(new ReadKeyRequest(json));
 			if (response == null) {
 				return NotFound();
@@ -44,6 +47,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("delete")]
 		public async Task<IActionResult> Delete([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "key/delete");
 			var response = await _server.DeleteKey(new DeleteKeyRequest(json));
 			if (response == null) {
 				return NotFound();

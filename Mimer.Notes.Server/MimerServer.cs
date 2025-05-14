@@ -21,6 +21,7 @@ namespace Mimer.Notes.Server {
 		private CryptSignature _signature;
 		private HttpClient _httpClient = new HttpClient();
 		private UserStatsManager _userStatsManager;
+		private GlobalStatsManager _globalStatsManager;
 		private Regex _invalidChars = new Regex("[!\"#$%&@'()*/=?[\\]{}~\\^\\\\\\s`]");
 		private IMimerDataSource _dataSource;
 		private List<UserType> _userTypes = new List<UserType>();
@@ -32,6 +33,7 @@ namespace Mimer.Notes.Server {
 			_dataSource.CreateDatabase();
 			_userTypes.AddRange(_dataSource.GetUserTypes());
 			_userStatsManager = new UserStatsManager(_dataSource);
+			_globalStatsManager = new GlobalStatsManager(_dataSource);
 			if (CertPath != null) {
 				if (File.Exists(Path.Combine(CertPath, "server.key"))) {
 					try {
@@ -59,6 +61,7 @@ namespace Mimer.Notes.Server {
 			_dataSource = new SqlLiteDataSource(testId);
 			_dataSource.CreateDatabase();
 			_userStatsManager = new UserStatsManager(_dataSource);
+			_globalStatsManager = new GlobalStatsManager(_dataSource);
 			_signature = new CryptSignature("RSA;3072");
 			_userTypes.AddRange(_dataSource.GetUserTypes());
 		}
@@ -69,6 +72,10 @@ namespace Mimer.Notes.Server {
 
 		public void TearDown(bool keepLogs) {
 			_dataSource.TearDown(keepLogs);
+		}
+
+		public void RegisterAction(ClientInfo info, string action) {
+			_globalStatsManager.RegisterAction(info, action);
 		}
 
 		public async Task<PreLoginResponse> PreLogin(string username) {

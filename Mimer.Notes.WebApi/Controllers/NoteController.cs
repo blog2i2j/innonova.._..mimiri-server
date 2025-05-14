@@ -17,6 +17,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("multi")]
 		public async Task<IActionResult> Multi([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/multi");
 			var response = await _server.MultiNote(new MultiNoteRequest(json));
 			if (response == null) {
 				return NotFound();
@@ -26,6 +27,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("create")]
 		public async Task<IActionResult> Create([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/create");
 			var response = await _server.CreateNote(new WriteNoteRequest(json));
 			if (response == null) {
 				return Conflict();
@@ -35,6 +37,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("read")]
 		public async Task<IActionResult> Read([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/read");
 			var response = await _server.ReadNote(new ReadNoteRequest(json));
 			if (response == null) {
 				return NotFound();
@@ -44,6 +47,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("update")]
 		public async Task<IActionResult> Update([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/update");
 			var response = await _server.UpdateNote(new WriteNoteRequest(json));
 			if (response == null) {
 				return NotFound();
@@ -53,6 +57,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("delete")]
 		public async Task<IActionResult> Delete([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/delete");
 			var response = await _server.DeleteNote(new DeleteNoteRequest(json));
 			if (response == null) {
 				return NotFound();
@@ -62,6 +67,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("share")]
 		public async Task<IActionResult> Share([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/share");
 			var response = await _server.ShareNote(new ShareNoteRequest(json));
 			if (response == null) {
 				return Conflict();
@@ -71,6 +77,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("share-offers")]
 		public async Task<IActionResult> ReadShareOffers([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/share-offers");
 			var response = await _server.ReadShareOffers(new BasicRequest(json));
 			if (response == null) {
 				return NotFound();
@@ -80,6 +87,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("share/delete")]
 		public async Task<IActionResult> DeleteShare([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/share/delete");
 			var response = await _server.DeleteShare(new DeleteShareRequest(json));
 			if (response == null) {
 				return NotFound();

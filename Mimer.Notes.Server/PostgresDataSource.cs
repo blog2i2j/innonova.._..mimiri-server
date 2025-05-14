@@ -225,6 +225,16 @@ EXCEPTION
    WHEN duplicate_object THEN
       NULL;
 END;$$;
+
+CREATE TABLE IF NOT EXISTS public."global_stats" (
+  id character(32) NOT NULL PRIMARY KEY,
+  value_type character varying(30) NOT NULL,
+	action character varying(30) NOT NULL,
+	key character varying(250) NOT NULL,
+	value bigint NOT NULL,
+	last_activity timestamp without time zone NOT NULL,
+	created timestamp without time zone NOT NULL DEFAULT current_timestamp
+);
 """;
 				command.ExecuteNonQuery();
 			}
@@ -911,6 +921,69 @@ WHERE
 				}
 			}
 		}
+
+		public async Task UpdateGlobalStats(IEnumerable<GlobalStatistic> globalStats) {
+			try {
+				await using var connection = await _postgres.OpenConnectionAsync();
+				await using var transaction = await connection.BeginTransactionAsync();
+				try {
+					await using var updateCommand = new NpgsqlCommand("", connection, transaction);
+					await using var insertCommand = new NpgsqlCommand("", connection, transaction);
+					updateCommand.CommandText = """
+UPDATE global_stats SET
+	value = value + @value,
+	last_activity = @last_activity
+WHERE
+	id = @id
+""";
+
+					insertCommand.CommandText = """
+INSERT INTO 
+	global_stats (
+		id,
+		value_type,
+		action,
+		key,
+		value,
+		last_activity
+	) VALUES (
+		@id,
+		@value_type,
+		@action,
+		@key,
+		@value,
+		@last_activity
+	)
+""";
+					foreach (var stats in globalStats) {
+						updateCommand.Parameters.Clear();
+						updateCommand.Parameters.AddWithValue("@id", stats.Id);
+						updateCommand.Parameters.AddWithValue("@value", stats.Value);
+						updateCommand.Parameters.AddWithValue("@last_activity", stats.LastActivity);
+						if (await updateCommand.ExecuteNonQueryAsync() == 0) {
+							insertCommand.Parameters.Clear();
+							insertCommand.Parameters.AddWithValue("@id", stats.Id);
+							insertCommand.Parameters.AddWithValue("@value_type", stats.Type);
+							insertCommand.Parameters.AddWithValue("@action", stats.Action);
+							insertCommand.Parameters.AddWithValue("@key", stats.Key);
+							insertCommand.Parameters.AddWithValue("@value", stats.Value);
+							insertCommand.Parameters.AddWithValue("@last_activity", stats.LastActivity);
+							await insertCommand.ExecuteNonQueryAsync();
+						}
+					}
+					await transaction.CommitAsync();
+					return;
+				}
+				catch (Exception ex) {
+					await transaction.RollbackAsync();
+					Dev.Log(ex);
+				}
+			}
+			catch (Exception ex) {
+				Dev.Log(ex);
+			}
+		}
+
 		public async Task RelcalcUserUsage(Guid userId) {
 			for (int retry = 0; retry < 10; retry++) {
 				try {

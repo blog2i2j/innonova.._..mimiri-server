@@ -31,6 +31,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 		}
 
 		[HttpGet("notify-update")]
+		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 		public async Task<IActionResult> NotifyUpdate() {
 			await _server.NotifyUpdate();
 			return Content(new BasicResponse().ToJsonString(), "text/plain", Encoding.UTF8);
