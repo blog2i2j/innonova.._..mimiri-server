@@ -10,6 +10,39 @@ using System.Text.RegularExpressions;
 
 namespace Mimer.Notes.Server {
 	public class MimerServer {
+		private static string[] InvalidUsernames = [
+			"mimiri",
+			"innonova",
+			"admin",
+			"administrator",
+			"moderator",
+			"support",
+			"staff",
+			"owner",
+			"system",
+			"root",
+			"null",
+			"undefined",
+			"user",
+			"guest",
+			"test",
+			"anonymous",
+			"api",
+			"config",
+			"localhost",
+			"server",
+			"help",
+			"login",
+			"signup",
+			"register",
+			"home",
+			"dashboard",
+			"about",
+			"bot",
+			"spammer",
+			"hacker",
+			"phisher"
+		];
 		public static string? CertPath { get; set; } = "";
 		public static string? WebsocketUrl { get; set; } = "";
 		public static string? NotificationsUrl { get; set; } = "";
@@ -23,6 +56,7 @@ namespace Mimer.Notes.Server {
 		private UserStatsManager _userStatsManager;
 		private GlobalStatsManager _globalStatsManager;
 		private Regex _invalidChars = new Regex("[!\"#$%&@'()*/=?[\\]{}~\\^\\\\\\s`]");
+		private Regex _anonUserPattern = new Regex(@"MIMIRI_A_\d+_\d+");
 		private IMimerDataSource _dataSource;
 		private List<UserType> _userTypes = new List<UserType>();
 		private ChallengeManager _challengeManager = new ChallengeManager();
@@ -199,10 +233,46 @@ namespace Mimer.Notes.Server {
 				response.ProofAccepted = false;
 				return response;
 			}
-
 			response.ProofAccepted = true;
-			response.Available = null == await _dataSource.GetUser(request.Username);
+
+			if (!IsValidUserName(request.Username)) {
+				response.Available = false;
+			}
+			else {
+				response.Available = null == await _dataSource.GetUser(request.Username);
+			}
 			return response;
+		}
+
+		private bool IsValidUserName(string name) {
+			if (_invalidChars.IsMatch(name)) {
+				return false;
+			}
+			string upperName = name.Trim().ToUpper();
+			if (_anonUserPattern.IsMatch(upperName)) {
+				return true;
+			}
+			if (upperName.StartsWith("INNONOVA")) {
+				return false;
+			}
+			if (InvalidUsernames.Any(entry => {
+				string entryUpper = entry.ToUpper();
+				if (entryUpper == upperName) {
+					return true;
+				}
+				if (upperName.StartsWith(entryUpper + "_")) {
+					return true;
+				}
+				if (upperName.StartsWith(entryUpper)) {
+					if (char.IsWhiteSpace(upperName[entryUpper.Length])) {
+						return true;
+					}
+				}
+				return false;
+			})) {
+				return false;
+			}
+			return true;
 		}
 
 		public async Task<BasicResponse?> CreateUser(CreateUserRequest request) {
@@ -214,7 +284,7 @@ namespace Mimer.Notes.Server {
 			if (!signer.VerifySignature("user", request)) {
 				return null;
 			}
-			if (_invalidChars.IsMatch(request.Username)) {
+			if (!IsValidUserName(request.Username)) {
 				return null;
 			}
 			var user = new MimerUser();
@@ -249,6 +319,12 @@ namespace Mimer.Notes.Server {
 			}
 			var oldUser = await _dataSource.GetUser(request.OldUsername);
 			if (oldUser != null) {
+				if (request.OldUsername != request.Username) {
+					if (!IsValidUserName(request.Username)) {
+						return null;
+					}
+				}
+
 				// TODO remove response length 0 check at some point in the future (backwards compatability)
 				if (request.Response.Length == 0 || _challengeManager.ValidateChallenge(oldUser.Username, oldUser.PasswordHash, request.Response, request.HashLength)) {
 					var oldSigner = new CryptSignature(oldUser.AsymmetricAlgorithm, oldUser.PublicKey);

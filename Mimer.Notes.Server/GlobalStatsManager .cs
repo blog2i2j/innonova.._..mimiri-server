@@ -38,10 +38,10 @@ namespace Mimer.Notes.Server {
 				HostVersion = items[2];
 			}
 			else {
-				Client = "";
-				Environment = "";
-				BundleVersion = "";
-				HostVersion = "";
+				Client = "unknown";
+				Environment = "unknown";
+				BundleVersion = "2.1.0";
+				HostVersion = "2.1.0";
 			}
 			ElectronVersion = "";
 			ChromeVersion = "";
@@ -50,11 +50,17 @@ namespace Mimer.Notes.Server {
 				foreach (var match in UserAgentPart.Matches(UserAgent).ToList<Match>()) {
 					Dev.Log(match);
 					if (match.Success) {
-						if (match.Groups[1].Value == "MimiriNotes" && HostVersion == "") {
+						if (match.Groups[1].Value == "MimiriNotes" && HostVersion == "2.1.0") {
 							HostVersion = match.Groups[2].Value;
 						}
 						if (match.Groups[1].Value == "Electron") {
 							ElectronVersion = match.Groups[2].Value;
+							if (Client == "unknown") {
+								Client = "Electron";
+							}
+							if (HostVersion == "") {
+								HostVersion = match.Groups[2].Value;
+							}
 						}
 						if (match.Groups[1].Value == "Chrome") {
 							ChromeVersion = match.Groups[2].Value;
@@ -64,6 +70,9 @@ namespace Mimer.Notes.Server {
 						}
 					}
 				}
+			}
+			if (MimiriVersion.Length == 0) {
+				MimiriVersion = $"{Client}-{Environment};{BundleVersion};{HostVersion}";
 			}
 		}
 
