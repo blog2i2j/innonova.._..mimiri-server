@@ -463,7 +463,7 @@ WHERE mimer_note.id = $id";
 			return false;
 		}
 
-		public async Task<bool> CreateNoteShareOffer(string sender, string recipient, Guid keyName, string data) {
+		public async Task<string?> CreateNoteShareOffer(string sender, string recipient, Guid keyName, string code, string data) {
 			try {
 				using var connection = new SqliteConnection(_connectionString);
 				await connection.OpenAsync();
@@ -475,12 +475,12 @@ WHERE mimer_note.id = $id";
 				command.Parameters.AddWithValue("$key_name", keyName);
 				command.Parameters.AddWithValue("$data", data);
 				await command.ExecuteNonQueryAsync();
-				return true;
+				return code;
 			}
 			catch (Exception ex) {
 				Dev.Log(_isTest, _connectionString, ex);
 			}
-			return false;
+			return null;
 		}
 
 		public async Task<List<DbShareOffer>> GetShareOffers(string username) {
@@ -506,6 +506,9 @@ WHERE mimer_note.id = $id";
 			return result;
 		}
 
+		public Task<DbShareOffer?> GetShareOffer(string username, string code) {
+			return Task.FromResult<DbShareOffer?>(null);
+		}
 
 		public async Task<bool> DeleteNoteShareOffer(Guid id) {
 			try {

@@ -27,22 +27,22 @@ namespace Mimer.Notes.WebApi.Controllers {
 			return null;
 		}
 
-		[HttpGet("{testId}/begin")]
-		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-		public IActionResult Begin(string testId) {
-			lock (_testServers) {
-				if (!_testServers.ContainsKey(testId)) {
-					var testContext = new TestContext();
-					testContext.Server = new MimerServer(testId);
-					testContext.Key = new KeyController(testContext.Server);
-					testContext.Note = new NoteController(testContext.Server);
-					testContext.User = new UserController(testContext.Server);
-					testContext.Notification = new NotificationController(testContext.Server);
-					_testServers.Add(testId, testContext);
-				}
-			}
-			return Content("{}", "text/plain", Encoding.UTF8);
-		}
+		//[HttpGet("{testId}/begin")]
+		//[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+		//public IActionResult Begin(string testId) {
+		//	lock (_testServers) {
+		//		if (!_testServers.ContainsKey(testId)) {
+		//			var testContext = new TestContext();
+		//			testContext.Server = new MimerServer(testId);
+		//			testContext.Key = new KeyController(testContext.Server);
+		//			testContext.Note = new NoteController(testContext.Server);
+		//			testContext.User = new UserController(testContext.Server);
+		//			testContext.Notification = new NotificationController(testContext.Server);
+		//			_testServers.Add(testId, testContext);
+		//		}
+		//	}
+		//	return Content("{}", "text/plain", Encoding.UTF8);
+		//}
 
 		[HttpGet("{testId}/end/{keepLogs}")]
 		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]

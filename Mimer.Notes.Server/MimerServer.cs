@@ -25,7 +25,6 @@ namespace Mimer.Notes.Server {
 			"undefined",
 			"user",
 			"guest",
-			"test",
 			"anonymous",
 			"api",
 			"config",
@@ -51,13 +50,15 @@ namespace Mimer.Notes.Server {
 		public static string PrivateKey { get; set; } = "";
 		public static string PublicKey { get; set; } = "";
 
+		private const int SYSTEM_NOTE_COUNT = 3;
+
 		private CryptSignature _signature;
 		private HttpClient _httpClient = new HttpClient();
 		private UserStatsManager _userStatsManager;
 		private GlobalStatsManager _globalStatsManager;
 		private Regex _invalidChars = new Regex("[!\"#$%&@'()*/=?[\\]{}~\\^\\\\\\s`]");
 		private Regex _anonUserPattern = new Regex(@"MIMIRI_A_\d+_\d+");
-		private IMimerDataSource _dataSource;
+		private PostgresDataSource _dataSource;
 		private List<UserType> _userTypes = new List<UserType>();
 		private ChallengeManager _challengeManager = new ChallengeManager();
 		private RequestValidator _requestValidator = new RequestValidator();
@@ -91,14 +92,14 @@ namespace Mimer.Notes.Server {
 			}
 		}
 
-		public MimerServer(string testId) {
-			_dataSource = new SqlLiteDataSource(testId);
-			_dataSource.CreateDatabase();
-			_userStatsManager = new UserStatsManager(_dataSource);
-			_globalStatsManager = new GlobalStatsManager(_dataSource);
-			_signature = new CryptSignature("RSA;3072");
-			_userTypes.AddRange(_dataSource.GetUserTypes());
-		}
+		// public MimerServer(string testId) {
+		// 	_dataSource = new SqlLiteDataSource(testId);
+		// 	_dataSource.CreateDatabase();
+		// 	_userStatsManager = new UserStatsManager(_dataSource);
+		// 	_globalStatsManager = new GlobalStatsManager(_dataSource);
+		// 	_signature = new CryptSignature("RSA;3072");
+		// 	_userTypes.AddRange(_dataSource.GetUserTypes());
+		// }
 
 		private UserType GetUserType(long id) {
 			return _userTypes.First(type => type.Id == id);
@@ -196,6 +197,33 @@ namespace Mimer.Notes.Server {
 			return null;
 		}
 
+		private bool ValidatePoW(string username, string powData, int bitsExpected) {
+			var pow = powData.Split("::");
+			var hash = pow[0];
+			var data = pow[1];
+			var dataAry = data.Split(':');
+			var timestamp = dataAry[0];
+			var value = dataAry[3];
+
+			if (value != username) {
+				return false;
+			}
+
+			if (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(long.Parse(timestamp)) > TimeSpan.FromMinutes(100)) {
+				return false;
+			}
+
+			if (hash != BitConverter.ToString(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(data))).Replace("-", "").ToLower()) {
+				return false;
+			}
+
+			ulong hashULong = ulong.Parse(hash.Substring(0, 16), System.Globalization.NumberStyles.HexNumber);
+			if ((hashULong & (0xFFFFFFFFFFFFFFFF << (64 - bitsExpected))) != 0) {
+				return false;
+			}
+			return true;
+		}
+
 		public async Task<CheckUsernameResponse?> UsernameAvailable(CheckUsernameRequest request) {
 			if (!request.IsValid) { // Not worth prevent repeats here
 				return null;
@@ -205,35 +233,10 @@ namespace Mimer.Notes.Server {
 			response.Username = request.Username;
 			response.Available = false;
 
-
-			var pow = request.Pow.Split("::");
-			var hash = pow[0];
-			var data = pow[1];
-			var dataAry = data.Split(':');
-			var timestamp = dataAry[0];
-			var value = dataAry[3];
-
-			if (value != request.Username) {
-				response.ProofAccepted = false;
+			response.ProofAccepted = ValidatePoW(request.Username, request.Pow, response.BitsExpected);
+			if (!response.ProofAccepted) {
 				return response;
 			}
-
-			if (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(long.Parse(timestamp)) > TimeSpan.FromMinutes(100)) {
-				response.ProofAccepted = false;
-				return response;
-			}
-
-			if (hash != BitConverter.ToString(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(data))).Replace("-", "").ToLower()) {
-				response.ProofAccepted = false;
-				return response;
-			}
-
-			ulong hashULong = ulong.Parse(hash.Substring(0, 16), System.Globalization.NumberStyles.HexNumber);
-			if ((hashULong & (0xFFFFFFFFFFFFFFFF << (64 - response.BitsExpected))) != 0) {
-				response.ProofAccepted = false;
-				return response;
-			}
-			response.ProofAccepted = true;
 
 			if (!IsValidUserName(request.Username)) {
 				response.Available = false;
@@ -308,7 +311,7 @@ namespace Mimer.Notes.Server {
 			return null;
 		}
 
-		public async Task<BasicResponse?> UpdateUser(UpdateUserRequest request) {
+		public async Task<BasicResponse?> UpdateUser(UpdateUserRequest request, ClientInfo clientInfo) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
 			}
@@ -330,6 +333,9 @@ namespace Mimer.Notes.Server {
 					var oldSigner = new CryptSignature(oldUser.AsymmetricAlgorithm, oldUser.PublicKey);
 					if (!oldSigner.VerifySignature("old-user", request)) {
 						return null;
+					}
+					if (_anonUserPattern.IsMatch(oldUser.Username.ToUpper())) {
+						this.RegisterAction(clientInfo, "promote-account");
 					}
 					var user = new MimerUser();
 					user.Username = request.Username;
@@ -503,13 +509,21 @@ namespace Mimer.Notes.Server {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
 			}
+			var response = new PublicKeyResponse();
+			response.BitsExpected = 15;
+			response.ProofAccepted = true;
+			if (request.HasPow) { // TODO remove check when clients are updated
+				response.ProofAccepted = ValidatePoW(request.KeyOwnerName, request.Pow, response.BitsExpected);
+				if (!response.ProofAccepted) {
+					return response;
+				}
+			}
 			var user = await _dataSource.GetUser(request.Username);
 			if (user != null) {
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
 					var targetUser = await _dataSource.GetUser(request.KeyOwnerName);
 					if (targetUser != null) {
-						var response = new PublicKeyResponse();
 						response.AsymmetricAlgorithm = targetUser.AsymmetricAlgorithm;
 						response.PublicKey = targetUser.PublicKey;
 						return response;
@@ -542,7 +556,7 @@ namespace Mimer.Notes.Server {
 					long totalSizeAdded = 0;
 					foreach (var action in request.Actions) {
 						if (action.Type == "create") {
-							if (++createCount + user.NoteCount > userType.MaxNoteCount) {
+							if (++createCount + user.NoteCount > userType.MaxNoteCount + SYSTEM_NOTE_COUNT) {
 								Dev.Log("create declined, too many notes");
 								return null;
 							}
@@ -625,7 +639,7 @@ namespace Mimer.Notes.Server {
 					Dev.Log("create declined, user has exceeded limit");
 					return null;
 				}
-				if (user.NoteCount > userType.MaxNoteCount) {
+				if (user.NoteCount > userType.MaxNoteCount + SYSTEM_NOTE_COUNT) {
 					Dev.Log("create declined, too many notes");
 					return null;
 				}
@@ -832,7 +846,7 @@ namespace Mimer.Notes.Server {
 			return null;
 		}
 
-		public async Task<BasicResponse?> ShareNote(ShareNoteRequest request) {
+		public async Task<ShareResponse?> ShareNote(ShareNoteRequest request) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
 			}
@@ -843,8 +857,11 @@ namespace Mimer.Notes.Server {
 					var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 					var keySigner = new CryptSignature(key.AsymmetricAlgorithm, key.PublicKey);
 					if (signer.VerifySignature("user", request) && keySigner.VerifySignature("key", request)) {
-						if (await _dataSource.CreateNoteShareOffer(user.Username, request.Recipient, request.KeyName, request.Data)) {
-							return new BasicResponse();
+						string? code = await _dataSource.CreateNoteShareOffer(user.Username, request.Recipient, request.KeyName, new Random().Next(1000, 10000).ToString(), request.Data);
+						if (code != null) {
+							var response = new ShareResponse();
+							response.Code = code;
+							return response;
 						}
 					}
 				}
@@ -872,6 +889,25 @@ namespace Mimer.Notes.Server {
 			return null;
 		}
 
+		public async Task<ShareOffersResponse?> GetShareOffer(ShareOfferRequest request) {
+			if (!_requestValidator.ValidateRequest(request)) {
+				return null;
+			}
+			var user = await _dataSource.GetUser(request.Username);
+			if (user != null) {
+				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
+				if (signer.VerifySignature("user", request)) {
+					var offer = await _dataSource.GetShareOffer(user.Username, request.Code);
+					if (offer != null) {
+						var response = new ShareOffersResponse();
+						response.AddOffer(offer.Id, offer.Sender, offer.Data);
+						return response;
+					}
+				}
+			}
+			return null;
+		}
+
 		public async Task<BasicResponse?> DeleteShare(DeleteShareRequest request) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
@@ -882,6 +918,27 @@ namespace Mimer.Notes.Server {
 				if (signer.VerifySignature("user", request)) {
 					if (await _dataSource.DeleteNoteShareOffer(request.Id)) {
 						return new BasicResponse();
+					}
+				}
+			}
+			return null;
+		}
+
+		public async Task<ShareParticipantsResponse?> GetSharedWith(ShareParticipantsRequest request) {
+			if (!_requestValidator.ValidateRequest(request)) {
+				return null;
+			}
+			var user = await _dataSource.GetUser(request.Username);
+			if (user != null) {
+				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
+				if (signer.VerifySignature("user", request)) {
+					var participants = await _dataSource.GetShareParticipants(request.Id);
+					if (participants.Any(item => item.id == user.Id)) {
+						var result = new ShareParticipantsResponse();
+						foreach (var item in participants) {
+							result.AddParticipant(item.username, item.since);
+						}
+						return result;
 					}
 				}
 			}

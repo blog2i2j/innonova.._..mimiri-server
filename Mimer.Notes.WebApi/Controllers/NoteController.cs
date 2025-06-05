@@ -85,10 +85,30 @@ namespace Mimer.Notes.WebApi.Controllers {
 			return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
 		}
 
+		[HttpPost("share-offer")]
+		public async Task<IActionResult> GetShareOffers([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/share-offer");
+			var response = await _server.GetShareOffer(new ShareOfferRequest(json));
+			if (response == null) {
+				return NotFound();
+			}
+			return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
+		}
+
 		[HttpPost("share/delete")]
 		public async Task<IActionResult> DeleteShare([FromBody] JsonObject json) {
 			_server.RegisterAction(Info, "note/share/delete");
 			var response = await _server.DeleteShare(new DeleteShareRequest(json));
+			if (response == null) {
+				return NotFound();
+			}
+			return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
+		}
+
+		[HttpPost("share-participants")]
+		public async Task<IActionResult> GetSharedWith([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "note/shared-with");
+			var response = await _server.GetSharedWith(new ShareParticipantsRequest(json));
 			if (response == null) {
 				return NotFound();
 			}

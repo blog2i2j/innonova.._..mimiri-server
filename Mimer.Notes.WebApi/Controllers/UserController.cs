@@ -34,7 +34,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 			if (json.Has("keyId")) {
 				json = _server.DecryptRequest(json);
 			}
-			var response = await _server.UpdateUser(new UpdateUserRequest(json));
+			var response = await _server.UpdateUser(new UpdateUserRequest(json), Info);
 			if (response != null) {
 				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
 			}

@@ -7,7 +7,7 @@ namespace Mimer.Notes.Server {
 		List<UserType> GetUserTypes();
 		Task<bool> CreateKey(MimerKey data);
 		Task<bool> CreateNote(DbNote note);
-		Task<bool> CreateNoteShareOffer(string sender, string recipient, Guid keyName, string data);
+		Task<string?> CreateNoteShareOffer(string sender, string recipient, Guid keyName, string code, string data);
 		Task<bool> CreateUser(MimerUser user);
 		Task<bool> DeleteKey(Guid id);
 		Task<bool> DeleteNote(Guid id);
@@ -17,6 +17,7 @@ namespace Mimer.Notes.Server {
 		Task<MimerKey?> GetKeyByName(Guid keyName);
 		Task<DbNote?> GetNote(Guid id);
 		Task<List<DbShareOffer>> GetShareOffers(string username);
+		Task<DbShareOffer?> GetShareOffer(string username, string code);
 		Task<MimerUser?> GetUser(string username);
 		Task<UserSize> GetUserSize(Guid userId);
 		void TearDown(bool keepLogs);

@@ -35,6 +35,24 @@ namespace Mimer.Notes.Model.Responses {
 			}
 		}
 
+		public bool ProofAccepted {
+			get {
+				return _json.Boolean("proofAccepted");
+			}
+			set {
+				_json.Boolean("proofAccepted", value);
+			}
+		}
+
+		public int BitsExpected {
+			get {
+				return _json.Int32("bitsExpected");
+			}
+			set {
+				_json.Int32("bitsExpected", value);
+			}
+		}
+
 		public override string ToString() {
 			return _json.ToString(true);
 		}

@@ -124,10 +124,12 @@ CREATE TABLE IF NOT EXISTS public."note_share_offer" (
   id uuid NOT NULL PRIMARY KEY,
   sender uuid NOT NULL,
   recipient uuid NOT NULL,
+  code character varying(10),
 	key_name uuid NOT NULL,
   data text NOT NULL,
 	created timestamp without time zone NOT NULL DEFAULT current_timestamp,
-	CONSTRAINT "note_share_offer_sender_recipient_key_name" UNIQUE (sender, recipient, key_name)
+	CONSTRAINT "note_share_offer_sender_recipient_key_name" UNIQUE (sender, recipient, key_name),
+	CONSTRAINT "note_share_offer_recipient_code" UNIQUE (recipient, code)
 );
 
 CREATE TABLE IF NOT EXISTS public."user_stats" (
@@ -775,36 +777,47 @@ WHERE mimer_note.id = @id";
 			return false;
 		}
 
-		public async Task<bool> CreateNoteShareOffer(string sender, string recipient, Guid keyName, string data) {
+		public async Task<string?> CreateNoteShareOffer(string sender, string recipient, Guid keyName, string code, string data) {
 			try {
 				using var command = _postgres.CreateCommand();
-				command.CommandText = @"INSERT INTO note_share_offer (id, sender, recipient, key_name, data) VALUES (@id, (SELECT id FROM mimer_user WHERE username_upper = upper(@sender)), (SELECT id FROM mimer_user WHERE username_upper = upper(@recipient)), @key_name, @data)";
+				command.CommandText = @"INSERT INTO note_share_offer (id, sender, recipient, key_name, code, data) VALUES (@id, (SELECT id FROM mimer_user WHERE username_upper = upper(@sender)), (SELECT id FROM mimer_user WHERE username_upper = upper(@recipient)), @key_name, @code, @data)";
 				command.Parameters.AddWithValue("@id", Guid.NewGuid());
 				command.Parameters.AddWithValue("@sender", sender);
 				command.Parameters.AddWithValue("@recipient", recipient);
 				command.Parameters.AddWithValue("@key_name", keyName);
+				command.Parameters.AddWithValue("@code", code);
 				command.Parameters.AddWithValue("@data", data);
-				await command.ExecuteNonQueryAsync();
-				return true;
+				try {
+					await command.ExecuteNonQueryAsync();
+				}
+				catch {
+					command.CommandText = "SELECT code FROM note_share_offer WHERE sender = (SELECT id FROM mimer_user WHERE username_upper = upper(@sender)) AND recipient = (SELECT id FROM mimer_user WHERE username_upper = upper(@recipient)) AND key_name = @key_name";
+					using var reader = await command.ExecuteReaderAsync();
+					if (await reader.ReadAsync()) {
+						return reader.GetString(0);
+					}
+				}
+				return code;
 			}
 			catch (Exception ex) {
 				Dev.Log(_connectionString, ex);
 			}
-			return false;
+			return null;
 		}
 
 		public async Task<List<DbShareOffer>> GetShareOffers(string username) {
 			var result = new List<DbShareOffer>();
 			try {
 				using var command = _postgres.CreateCommand();
-				command.CommandText = @"SELECT note_share_offer.id, mimer_user.username, note_share_offer.data FROM note_share_offer INNER JOIN mimer_user ON mimer_user.id = sender WHERE recipient = (SELECT id FROM mimer_user WHERE username_upper = upper(@username))";
+				command.CommandText = @"SELECT note_share_offer.id, mimer_user.username, note_share_offer.code, note_share_offer.data FROM note_share_offer INNER JOIN mimer_user ON mimer_user.id = sender WHERE recipient = (SELECT id FROM mimer_user WHERE username_upper = upper(@username))";
 				command.Parameters.AddWithValue("@username", username);
 				using var reader = await command.ExecuteReaderAsync();
 				while (await reader.ReadAsync()) {
 					result.Add(new DbShareOffer {
 						Id = reader.GetGuid(0),
 						Sender = reader.GetString(1),
-						Data = reader.GetString(2)
+						Code = reader.GetString(2),
+						Data = reader.GetString(3)
 					});
 				}
 			}
@@ -812,6 +825,28 @@ WHERE mimer_note.id = @id";
 				Dev.Log(_connectionString, ex);
 			}
 			return result;
+		}
+
+		public async Task<DbShareOffer?> GetShareOffer(string username, string code) {
+			try {
+				using var command = _postgres.CreateCommand();
+				command.CommandText = @"SELECT note_share_offer.id, mimer_user.username, note_share_offer.code, note_share_offer.data FROM note_share_offer INNER JOIN mimer_user ON mimer_user.id = sender WHERE recipient = (SELECT id FROM mimer_user WHERE username_upper = upper(@username)) AND code = @code ORDER BY note_share_offer.created DESC";
+				command.Parameters.AddWithValue("@username", username);
+				command.Parameters.AddWithValue("@code", code);
+				using var reader = await command.ExecuteReaderAsync();
+				if (await reader.ReadAsync()) {
+					return new DbShareOffer {
+						Id = reader.GetGuid(0),
+						Sender = reader.GetString(1),
+						Code = reader.GetString(2),
+						Data = reader.GetString(3)
+					};
+				}
+			}
+			catch (Exception ex) {
+				Dev.Log(_connectionString, ex);
+			}
+			return null;
 		}
 
 		public async Task<bool> DeleteNoteShareOffer(Guid id) {
@@ -826,6 +861,23 @@ WHERE mimer_note.id = @id";
 				Dev.Log(_connectionString, ex);
 			}
 			return false;
+		}
+
+		public async Task<List<(Guid id, string username, DateTime since)>> GetShareParticipants(Guid noteId) {
+			var result = new List<(Guid id, string username, DateTime since)>();
+			try {
+				using var command = _postgres.CreateCommand();
+				command.CommandText = @"select u.id, u.username, k.created from mimer_user u inner join mimer_key k on k.user_id = u.id inner join mimer_note n on k.key_name = n.key_name where n.id = @id";
+				command.Parameters.AddWithValue("@id", noteId);
+				using var reader = await command.ExecuteReaderAsync();
+				while (await reader.ReadAsync()) {
+					result.Add((reader.GetGuid(0), reader.GetString(1), reader.GetDateTime(2)));
+				}
+			}
+			catch (Exception ex) {
+				Dev.Log(_connectionString, ex);
+			}
+			return result;
 		}
 
 		public async Task<List<VersionConflict>?> MultiApply(List<NoteAction> actions, UserStats stats) {

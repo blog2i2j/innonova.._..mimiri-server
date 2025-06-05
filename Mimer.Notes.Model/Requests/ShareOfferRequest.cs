@@ -1,16 +1,16 @@
 ﻿using Mimer.Framework.Json;
 
 namespace Mimer.Notes.Model.Requests {
-	public class PublicKeyRequest : ISignable, IRequestObject, INonRepeatableRequest {
+	public class ShareOfferRequest : ISignable, IRequestObject, INonRepeatableRequest {
 		private JsonObject _json;
 
-		public PublicKeyRequest() {
+		public ShareOfferRequest() {
 			_json = new JsonObject();
 			TimeStamp = DateTime.UtcNow;
 			RequestId = Guid.NewGuid();
 		}
 
-		public PublicKeyRequest(JsonObject json) {
+		public ShareOfferRequest(JsonObject json) {
 			_json = json;
 		}
 
@@ -23,27 +23,12 @@ namespace Mimer.Notes.Model.Requests {
 			}
 		}
 
-		public bool HasPow {
+		public string Code {
 			get {
-				return _json.Has("pow");
-			}
-		}
-
-		public string Pow {
-			get {
-				return _json.String("pow");
+				return _json.String("code");
 			}
 			set {
-				_json.String("pow", value);
-			}
-		}
-
-		public string KeyOwnerName {
-			get {
-				return _json.String("keyOwnerName");
-			}
-			set {
-				_json.String("keyOwnerName", value);
+				_json.String("code", value);
 			}
 		}
 
@@ -94,7 +79,7 @@ namespace Mimer.Notes.Model.Requests {
 			get {
 				return !(
 					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(KeyOwnerName)
+					string.IsNullOrWhiteSpace(Code)
 				);
 			}
 		}
