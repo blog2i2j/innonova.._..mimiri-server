@@ -1,16 +1,16 @@
-﻿using Mimer.Framework.Json;
+using Mimer.Framework.Json;
 
 namespace Mimer.Notes.Model.Requests {
-	public class AddCommentRequest : ISignable, IRequestObject, INonRepeatableRequest {
+	public class GetCommentsRequest : ISignable, IRequestObject, IRepeatableRequest {
 		private JsonObject _json;
 
-		public AddCommentRequest() {
+		public GetCommentsRequest() {
 			_json = new JsonObject();
 			TimeStamp = DateTime.UtcNow;
 			RequestId = Guid.NewGuid();
 		}
 
-		public AddCommentRequest(JsonObject json) {
+		public GetCommentsRequest(JsonObject json) {
 			_json = json;
 		}
 
@@ -32,21 +32,21 @@ namespace Mimer.Notes.Model.Requests {
 			}
 		}
 
-		public string DisplayName {
+		public DateTime TimeStamp {
 			get {
-				return _json.String("displayName");
+				return _json.DateTime("timestamp");
 			}
 			set {
-				_json.String("displayName", value);
+				_json.DateTime("timestamp", value);
 			}
 		}
 
-		public string Comment {
+		public Guid RequestId {
 			get {
-				return _json.String("comment");
+				return _json.Guid("requestId");
 			}
 			set {
-				_json.String("comment", value);
+				_json.Guid("requestId", value);
 			}
 		}
 
@@ -75,30 +75,11 @@ namespace Mimer.Notes.Model.Requests {
 			return null;
 		}
 
-		public DateTime TimeStamp {
-			get {
-				return _json.DateTime("timestamp");
-			}
-			set {
-				_json.DateTime("timestamp", value);
-			}
-		}
-
-		public Guid RequestId {
-			get {
-				return _json.Guid("requestId");
-			}
-			set {
-				_json.Guid("requestId", value);
-			}
-		}
-
 		public bool IsValid {
 			get {
 				return !(
 					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(DisplayName) ||
-					string.IsNullOrWhiteSpace(Comment)
+					PostId == Guid.Empty
 				);
 			}
 		}

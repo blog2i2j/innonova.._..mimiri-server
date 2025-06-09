@@ -97,6 +97,10 @@ namespace Mimer.Notes.Server {
 			return request.IsValid;
 		}
 
+		public bool ValidateRequest(IRepeatableRequest request) {
+			return request.IsValid;
+		}
+
 
 	}
 }

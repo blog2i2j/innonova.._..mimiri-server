@@ -1005,15 +1005,33 @@ namespace Mimer.Notes.Server {
 			if (user != null) {
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
-					// var comment = new Comment {
-					// 	Id = Guid.NewGuid(),
-					// 	NoteId = addCommentRequest.NoteId,
-					// 	Username = user.Username,
-					// 	Content = addCommentRequest.Content,
-					// 	CreatedAt = DateTime.UtcNow
-					// };
-					// await _dataSource.AddComment(comment);
+					var comment = new Comment {
+						Id = Guid.NewGuid(),
+						PostId = request.PostId,
+						Username = request.DisplayName,
+						CommentText = request.Comment,
+					};
+					await _dataSource.AddComment(comment, user.Id);
 					return new BasicResponse();
+				}
+			}
+			return null;
+		}
+
+		public async Task<CommentsResponse?> GetCommentsByPost(GetCommentsRequest request) {
+			if (!_requestValidator.ValidateRequest(request)) {
+				return null;
+			}
+			var user = await _dataSource.GetUser(request.Username);
+			if (user != null) {
+				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
+				if (signer.VerifySignature("user", request)) {
+					var comments = await _dataSource.GetCommentsByPostId(request.PostId);
+					var response = new CommentsResponse();
+					foreach (var comment in comments) {
+						response.AddCommentInfo(comment);
+					}
+					return response;
 				}
 			}
 			return null;

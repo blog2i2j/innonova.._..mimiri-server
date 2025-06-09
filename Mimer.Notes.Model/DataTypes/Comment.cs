@@ -12,12 +12,12 @@ namespace Mimer.Notes.Model.DataTypes {
 			_json = json;
 		}
 
-		public string Id {
+		public Guid Id {
 			get {
-				return _json.String("id");
+				return _json.Guid("id");
 			}
 			set {
-				_json.String("id", value);
+				_json.Guid("id", value);
 			}
 		}
 
@@ -27,15 +27,6 @@ namespace Mimer.Notes.Model.DataTypes {
 			}
 			set {
 				_json.Guid("postId", value);
-			}
-		}
-
-		public Guid UserId {
-			get {
-				return _json.Guid("userId");
-			}
-			set {
-				_json.Guid("userId", value);
 			}
 		}
 
@@ -54,16 +45,6 @@ namespace Mimer.Notes.Model.DataTypes {
 			}
 			set {
 				_json.String("comment", value);
-			}
-		}
-
-		public string ModerationState {
-			get {
-				var value = _json.String("moderationState");
-				return string.IsNullOrEmpty(value) ? "pending" : value;
-			}
-			set {
-				_json.String("moderationState", value);
 			}
 		}
 
