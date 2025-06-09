@@ -92,15 +92,6 @@ namespace Mimer.Notes.Server {
 			}
 		}
 
-		// public MimerServer(string testId) {
-		// 	_dataSource = new SqlLiteDataSource(testId);
-		// 	_dataSource.CreateDatabase();
-		// 	_userStatsManager = new UserStatsManager(_dataSource);
-		// 	_globalStatsManager = new GlobalStatsManager(_dataSource);
-		// 	_signature = new CryptSignature("RSA;3072");
-		// 	_userTypes.AddRange(_dataSource.GetUserTypes());
-		// }
-
 		private UserType GetUserType(long id) {
 			return _userTypes.First(type => type.Id == id);
 		}
@@ -857,7 +848,7 @@ namespace Mimer.Notes.Server {
 					var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 					var keySigner = new CryptSignature(key.AsymmetricAlgorithm, key.PublicKey);
 					if (signer.VerifySignature("user", request) && keySigner.VerifySignature("key", request)) {
-						string? code = await _dataSource.CreateNoteShareOffer(user.Username, request.Recipient, request.KeyName, new Random().Next(1000, 10000).ToString(), request.Data);
+						string? code = await _dataSource.CreateNoteShareOffer(user.Id, request.Recipient, request.KeyName, request.Data);
 						if (code != null) {
 							var response = new ShareResponse();
 							response.Code = code;
@@ -1006,5 +997,28 @@ namespace Mimer.Notes.Server {
 			}
 		}
 
+		public async Task<BasicResponse?> AddComment(AddCommentRequest request) {
+			if (!_requestValidator.ValidateRequest(request)) {
+				return null;
+			}
+			var user = await _dataSource.GetUser(request.Username);
+			if (user != null) {
+				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
+				if (signer.VerifySignature("user", request)) {
+					// var comment = new Comment {
+					// 	Id = Guid.NewGuid(),
+					// 	NoteId = addCommentRequest.NoteId,
+					// 	Username = user.Username,
+					// 	Content = addCommentRequest.Content,
+					// 	CreatedAt = DateTime.UtcNow
+					// };
+					// await _dataSource.AddComment(comment);
+					return new BasicResponse();
+				}
+			}
+			return null;
+		}
+
 	}
 }
+

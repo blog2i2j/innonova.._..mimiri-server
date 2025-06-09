@@ -17,10 +17,10 @@ namespace Mimer.Notes.Server {
 
 	public class UserStatsManager {
 		private object _lock = new object();
-		private IMimerDataSource _dataSource;
+		private PostgresDataSource _dataSource;
 		private Dictionary<Guid, UserStats> _stats = new Dictionary<Guid, UserStats>();
 
-		public UserStatsManager(IMimerDataSource dataSource) {
+		public UserStatsManager(PostgresDataSource dataSource) {
 			_dataSource = dataSource;
 			Task.Run(Execute);
 		}

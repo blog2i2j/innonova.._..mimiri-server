@@ -48,7 +48,6 @@ namespace Mimer.Notes.Server {
 			FirefoxVersion = "";
 			if (UserAgent.Length > 0) {
 				foreach (var match in UserAgentPart.Matches(UserAgent).ToList<Match>()) {
-					Dev.Log(match);
 					if (match.Success) {
 						if (match.Groups[1].Value == "MimiriNotes" && HostVersion == "2.1.0") {
 							HostVersion = match.Groups[2].Value;
@@ -92,11 +91,11 @@ namespace Mimer.Notes.Server {
 	}
 
 	public class GlobalStatsManager {
-		private IMimerDataSource _dataSource;
+		private PostgresDataSource _dataSource;
 		private Dictionary<string, GlobalStatistic> _stats = new Dictionary<string, GlobalStatistic>();
 		private Queue<ClientAction> _queue = new Queue<ClientAction>();
 
-		public GlobalStatsManager(IMimerDataSource dataSource) {
+		public GlobalStatsManager(PostgresDataSource dataSource) {
 			_dataSource = dataSource;
 			Task.Run(Execute);
 			//var info = new ClientInfo("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) MimiriNotes/2.1.70 Chrome/128.0.6613.84 Electron/32.0.2 Safari/537.36", "Electron-Windows;2.1.100;2.1.70");

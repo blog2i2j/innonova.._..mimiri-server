@@ -298,3 +298,4 @@ Mimer.Notes.WebApi/appsettings.Development.json
 Mimer.Notes.SignalR/appsettings.Development.json
 publish.api/
 publish.signalr/
+deployment/

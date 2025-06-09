@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 
 namespace Mimer.Notes.Server {
-	public class PostgresDataSource : IMimerDataSource {
+	public class PostgresDataSource {
 		private string _connectionString;
 		private NpgsqlDataSource _postgres;
 		private byte[] _userEncryptionKey;
@@ -237,6 +237,33 @@ CREATE TABLE IF NOT EXISTS public."global_stats" (
 	last_activity timestamp without time zone NOT NULL,
 	created timestamp without time zone NOT NULL DEFAULT current_timestamp
 );
+
+CREATE TABLE IF NOT EXISTS public."blog_post" (
+  user_id uuid NOT NULL PRIMARY KEY,
+  title character varying(50) NOT NULL,
+	published boolean NOT NULL DEFAULT false,
+  file_name character varying(50) NOT NULL,
+  created timestamp without time zone NOT NULL DEFAULT current_timestamp
+);
+
+CREATE TABLE IF NOT EXISTS public."comment" (
+  user_id uuid NOT NULL PRIMARY KEY,
+	post_id uuid NOT NULL,
+	user_id uuid NOT NULL,
+	username character varying(50) NOT NULL,
+	comment text NOT NULL,
+	moderation_state character varying(20) NOT NULL DEFAULT 'pending',
+	created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+	modified timestamp without time zone NOT NULL DEFAULT current_timestamp
+);
+
+DO
+$$BEGIN
+CREATE TRIGGER update_comment_modified BEFORE UPDATE ON public."comment"  FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+EXCEPTION
+   WHEN duplicate_object THEN
+      NULL;
+END;$$;
 """;
 				command.ExecuteNonQuery();
 			}
@@ -777,27 +804,64 @@ WHERE mimer_note.id = @id";
 			return false;
 		}
 
-		public async Task<string?> CreateNoteShareOffer(string sender, string recipient, Guid keyName, string code, string data) {
+		public async Task<string?> CreateNoteShareOffer(Guid senderId, string recipient, Guid keyName, string data) {
 			try {
+				var recipientId = Guid.Empty;
 				using var command = _postgres.CreateCommand();
-				command.CommandText = @"INSERT INTO note_share_offer (id, sender, recipient, key_name, code, data) VALUES (@id, (SELECT id FROM mimer_user WHERE username_upper = upper(@sender)), (SELECT id FROM mimer_user WHERE username_upper = upper(@recipient)), @key_name, @code, @data)";
-				command.Parameters.AddWithValue("@id", Guid.NewGuid());
-				command.Parameters.AddWithValue("@sender", sender);
+				command.CommandText = @"SELECT id FROM mimer_user WHERE username_upper = upper(@recipient)";
 				command.Parameters.AddWithValue("@recipient", recipient);
-				command.Parameters.AddWithValue("@key_name", keyName);
-				command.Parameters.AddWithValue("@code", code);
-				command.Parameters.AddWithValue("@data", data);
-				try {
-					await command.ExecuteNonQueryAsync();
-				}
-				catch {
-					command.CommandText = "SELECT code FROM note_share_offer WHERE sender = (SELECT id FROM mimer_user WHERE username_upper = upper(@sender)) AND recipient = (SELECT id FROM mimer_user WHERE username_upper = upper(@recipient)) AND key_name = @key_name";
-					using var reader = await command.ExecuteReaderAsync();
+				using (var reader = await command.ExecuteReaderAsync()) {
 					if (await reader.ReadAsync()) {
-						return reader.GetString(0);
+						recipientId = reader.GetGuid(0);
 					}
 				}
-				return code;
+				if (recipientId == Guid.Empty) {
+					throw new Exception("Recipient not found");
+				}
+
+				// keep the number of share requests down to limit DoS options
+				command.CommandText = @"SELECT id FROM note_share_offer WHERE recipient = @recipient_id ORDER BY created DESC";
+				command.Parameters.Clear();
+				command.Parameters.AddWithValue("@recipient_id", recipientId);
+				List<Guid> ids = new List<Guid>();
+				using (var reader = await command.ExecuteReaderAsync()) {
+					int count = 0;
+					while (await reader.ReadAsync()) {
+						if (count++ >= 5) {
+							ids.Add(reader.GetGuid(0));
+						}
+					}
+				}
+				command.CommandText = @"DELETE FROM note_share_offer WHERE id = @id";
+				foreach (Guid id in ids) {
+					command.Parameters.Clear();
+					command.Parameters.AddWithValue("@id", id);
+					await command.ExecuteNonQueryAsync();
+				}
+
+				for (int i = 0; i < 10; i++) { // if we can't do it in 10 tries something is wrong
+					var code = new Random().Next(1000, 10000).ToString();
+					command.CommandText = @"INSERT INTO note_share_offer (id, sender, recipient, key_name, code, data) VALUES (@id, @sender_id, @recipient_id, @key_name, @code, @data)";
+					command.Parameters.Clear();
+					command.Parameters.AddWithValue("@id", Guid.NewGuid());
+					command.Parameters.AddWithValue("@sender_id", senderId);
+					command.Parameters.AddWithValue("@recipient_id", recipientId);
+					command.Parameters.AddWithValue("@key_name", keyName);
+					command.Parameters.AddWithValue("@code", code);
+					command.Parameters.AddWithValue("@data", data);
+					try {
+						await command.ExecuteNonQueryAsync();
+						return code;
+					}
+					catch (Exception ex) {
+						Dev.Log(ex);
+						command.CommandText = "SELECT code FROM note_share_offer WHERE sender = @sender_id AND recipient = @recipient_id AND key_name = @key_name";
+						using var reader = await command.ExecuteReaderAsync();
+						if (await reader.ReadAsync()) {
+							return reader.GetString(0);
+						}
+					}
+				}
 			}
 			catch (Exception ex) {
 				Dev.Log(_connectionString, ex);
@@ -990,7 +1054,7 @@ WHERE
 """;
 
 					insertCommand.CommandText = """
-INSERT INTO 
+INSERT INTO
 	global_stats (
 		id,
 		value_type,
