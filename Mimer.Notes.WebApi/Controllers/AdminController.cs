@@ -35,5 +35,15 @@ namespace Mimer.Notes.WebApi.Controllers {
 			return Conflict();
 		}
 
+		[HttpPost("promote-user")]
+		public async Task<IActionResult> PromoteUser([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "admin/promote-user");
+			var response = await _server.PromoteUserToAdmin(new PromoteUserRequest(json));
+			if (response != null) {
+				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
+			}
+			return Conflict();
+		}
+
 	}
 }

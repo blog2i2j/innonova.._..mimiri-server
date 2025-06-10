@@ -19,10 +19,8 @@ namespace Mimer.Notes.Server {
 		public void CreateDatabase() {
 			Dev.Log("CreateDatabase");
 			try {
-				// Create common functions first
 				CreateCommonFunctions();
-
-				// Create tables in logical order to handle dependencies
+				CreateRoleTables();
 				CreateUserTables();
 				CreateKeyTables();
 				CreateNoteTables();
