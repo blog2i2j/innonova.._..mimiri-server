@@ -25,7 +25,6 @@ namespace Mimer.Notes.WebApi.Controllers {
 			return Conflict();
 		}
 
-
 		[HttpPost("get-comments")]
 		public async Task<IActionResult> GetComments([FromBody] JsonObject json) {
 			_server.RegisterAction(Info, "feedback/get-comments");
@@ -36,5 +35,14 @@ namespace Mimer.Notes.WebApi.Controllers {
 			return NotFound();
 		}
 
+		[HttpPost("latest-posts")]
+		public async Task<IActionResult> GetLatestBlogPosts([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "feedback/latest-posts");
+			var response = await _server.GetLatestBlogPosts(new GetBlogPostsRequest(json));
+			if (response != null) {
+				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
+			}
+			return NotFound();
+		}
 	}
 }

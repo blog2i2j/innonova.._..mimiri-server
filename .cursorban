@@ -1,0 +1,4 @@
+# Ban .env files from being tracked or edited
+*.env
+.env.*
+deployment/

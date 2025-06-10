@@ -39,12 +39,12 @@ namespace Mimer.Notes.Model.DataTypes {
 			}
 		}
 
-		public string FileName {
+		public string Content {
 			get {
-				return _json.String("fileName");
+				return _json.String("content");
 			}
 			set {
-				_json.String("fileName", value);
+				_json.String("content", value);
 			}
 		}
 

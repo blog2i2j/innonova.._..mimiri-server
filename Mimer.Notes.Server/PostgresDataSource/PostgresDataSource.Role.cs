@@ -10,7 +10,7 @@ namespace Mimer.Notes.Server {
 			command.CommandText = """
 				CREATE TABLE IF NOT EXISTS public."admin_users" (
 				  user_id uuid NOT NULL PRIMARY KEY,
-				  created_at timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
 				  CONSTRAINT fk_admin_user FOREIGN KEY (user_id) REFERENCES mimer_user(id) ON DELETE CASCADE
 				);
 				""";
