@@ -4,6 +4,34 @@ using Mimer.Notes.Model.DataTypes;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {
+		// Database creation methods
+		private void CreateCommentTables() {
+			using var command = _postgres.CreateCommand();
+			command.CommandText = """
+				CREATE TABLE IF NOT EXISTS public."comment" (
+				  id uuid NOT NULL PRIMARY KEY,
+				  post_id uuid NOT NULL,
+				  user_id uuid NOT NULL,
+				  username character varying(50) NOT NULL,
+				  comment text NOT NULL,
+				  moderation_state character varying(20) NOT NULL DEFAULT 'pending',
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_comment_post_id_moderation_state ON public."comment" (post_id, moderation_state);
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_comment_modified BEFORE UPDATE ON public."comment"  FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+				""";
+			command.ExecuteNonQuery();
+		}
+
 		// Comment-related methods
 		public async Task<bool> AddComment(Comment comment, Guid userId) {
 			try {

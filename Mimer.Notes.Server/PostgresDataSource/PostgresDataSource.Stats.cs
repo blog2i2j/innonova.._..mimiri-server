@@ -6,6 +6,23 @@ using Npgsql;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {
+		// Database creation methods
+		private void CreateStatsTables() {
+			using var command = _postgres.CreateCommand();
+			command.CommandText = """
+				CREATE TABLE IF NOT EXISTS public."global_stats" (
+				  id character(32) NOT NULL PRIMARY KEY,
+				  value_type character varying(30) NOT NULL,
+				  action character varying(30) NOT NULL,
+				  key character varying(250) NOT NULL,
+				  value bigint NOT NULL,
+				  last_activity timestamp without time zone NOT NULL,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp
+				);
+				""";
+			command.ExecuteNonQuery();
+		}
+
 		// Statistics-related methods
 		public async Task<List<VersionConflict>?> MultiApply(List<NoteAction> actions, UserStats stats) {
 			var result = new List<VersionConflict>();

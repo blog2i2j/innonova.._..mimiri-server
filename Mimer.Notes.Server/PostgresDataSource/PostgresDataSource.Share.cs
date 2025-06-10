@@ -3,6 +3,25 @@ using Mimer.Framework;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {
+		// Database creation methods
+		private void CreateShareTables() {
+			using var command = _postgres.CreateCommand();
+			command.CommandText = """
+				CREATE TABLE IF NOT EXISTS public."note_share_offer" (
+				  id uuid NOT NULL PRIMARY KEY,
+				  sender uuid NOT NULL,
+				  recipient uuid NOT NULL,
+				  code character varying(10),
+				  key_name uuid NOT NULL,
+				  data text NOT NULL,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  CONSTRAINT "note_share_offer_sender_recipient_key_name" UNIQUE (sender, recipient, key_name),
+				  CONSTRAINT "note_share_offer_recipient_code" UNIQUE (recipient, code)
+				);
+				""";
+			command.ExecuteNonQuery();
+		}
+
 		// Share offer and participant methods
 		public async Task<string?> CreateNoteShareOffer(Guid senderId, string recipient, Guid keyName, string data) {
 			try {

@@ -8,6 +8,77 @@ using Npgsql;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {
+
+		// Database creation methods
+		private void CreateUserTables() {
+			using var command = _postgres.CreateCommand();
+			command.CommandText = """
+				CREATE TABLE IF NOT EXISTS public."user_type" (
+				  id bigint NOT NULL PRIMARY KEY,
+				  name character varying(50) NOT NULL,
+				  max_total_bytes bigint NOT NULL,
+				  max_note_bytes bigint NOT NULL,
+				  max_note_count bigint NOT NULL,
+				  max_history_entries bigint NOT NULL,
+				  CONSTRAINT "user_type_name" UNIQUE (name)
+				);
+
+				CREATE TABLE IF NOT EXISTS public."mimer_user" (
+				  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+				  username character varying(50) NOT NULL,
+				  username_upper character varying(50) COLLATE pg_catalog."default" GENERATED ALWAYS AS (upper((username)::text)) STORED,
+				  user_type bigint NOT NULL DEFAULT 1,
+				  data text NOT NULL,
+				  server_config text NOT NULL DEFAULT '{}',
+				  client_config text NOT NULL DEFAULT '{}',
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  CONSTRAINT "mimer_user_username" UNIQUE (username),
+				  CONSTRAINT "mimer_user_username_upper" UNIQUE (username_upper)
+				);
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_mimer_user_modified BEFORE UPDATE ON public."mimer_user" FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+
+				CREATE TABLE IF NOT EXISTS public."user_stats" (
+				  user_id uuid NOT NULL PRIMARY KEY,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  last_activity timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  size bigint NOT NULL DEFAULT 0,
+				  logins bigint NOT NULL DEFAULT 0,
+				  reads bigint NOT NULL DEFAULT 0,
+				  writes bigint NOT NULL DEFAULT 0,
+				  read_bytes bigint NOT NULL DEFAULT 0,
+				  write_bytes bigint NOT NULL DEFAULT 0,
+				  creates bigint NOT NULL DEFAULT 0,
+				  deletes bigint NOT NULL DEFAULT 0,
+				  notifications bigint NOT NULL DEFAULT 0
+				);
+
+				CREATE OR REPLACE FUNCTION update_user_stats_size()
+				RETURNS TRIGGER AS $$
+				BEGIN
+				 	IF (TG_OP = 'DELETE') THEN
+						UPDATE user_stats SET size = size - OLD.size, notes = notes - OLD.note_count WHERE user_id = OLD.user_id;
+					ELSIF (TG_OP = 'UPDATE') THEN
+						IF (NEW.size <> OLD.size OR NEW.note_count <> OLD.note_count) THEN
+							UPDATE user_stats SET size = size + NEW.size - OLD.size, notes = notes + NEW.note_count - OLD.note_count WHERE user_id = NEW.user_id;
+						END IF;
+					ELSIF (TG_OP = 'INSERT') THEN
+						UPDATE user_stats SET size = size + NEW.size WHERE user_id = NEW.user_id;
+					END IF;
+				    RETURN NULL;
+				END;
+				$$ language 'plpgsql';
+				""";
+			command.ExecuteNonQuery();
+		}
+
 		// User-related methods
 		private byte[] ReadToEnd(Stream stream) {
 			using (MemoryStream OStream = new MemoryStream()) {

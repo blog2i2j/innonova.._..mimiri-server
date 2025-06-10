@@ -6,6 +6,103 @@ using Npgsql;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {
+		// Database creation methods
+		private void CreateNoteTables() {
+			using var command = _postgres.CreateCommand();
+			command.CommandText = """
+				CREATE TABLE IF NOT EXISTS public."mimer_note" (
+				  id uuid NOT NULL PRIMARY KEY,
+				  key_name uuid NOT NULL,
+				  size bigint NOT NULL,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp
+				);
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_mimer_note_modified BEFORE UPDATE ON public."mimer_note"  FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+
+				CREATE TABLE IF NOT EXISTS public."mimer_note_item" (
+				  note_id uuid NOT NULL,
+				  item_type character varying(50) NOT NULL,
+				  version bigint NOT NULL,
+				  data text NOT NULL,
+				  size bigint NOT NULL,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  PRIMARY KEY (note_id, item_type)
+				);
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_mimer_note_item_modified BEFORE UPDATE ON public."mimer_note_item"  FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+
+				CREATE OR REPLACE FUNCTION update_note_size()
+				RETURNS TRIGGER AS $$
+				BEGIN
+				 	IF (TG_OP = 'DELETE') THEN
+						UPDATE mimer_note SET size = size - OLD.size WHERE id = OLD.note_id;
+					ELSIF (TG_OP = 'UPDATE') THEN
+						IF (NEW.size <> OLD.size) THEN
+							UPDATE mimer_note SET size = size + NEW.size - OLD.size WHERE id = NEW.note_id;
+						END IF;
+					ELSIF (TG_OP = 'INSERT') THEN
+						UPDATE mimer_note SET size = size + NEW.size WHERE id = NEW.note_id;
+					END IF;
+				    RETURN NULL;
+				END;
+				$$ language 'plpgsql';
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_note_item_size
+				AFTER INSERT OR UPDATE OR DELETE ON mimer_note_item
+				    FOR EACH ROW EXECUTE FUNCTION update_note_size();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+
+				CREATE OR REPLACE FUNCTION update_key_size()
+				RETURNS TRIGGER AS $$
+				BEGIN
+				 	IF (TG_OP = 'DELETE') THEN
+						UPDATE mimer_key SET size = size - OLD.size, note_count = note_count - 1 WHERE key_name = OLD.key_name;
+					ELSIF (TG_OP = 'UPDATE') THEN
+						IF (NEW.key_name <> OLD.key_name) THEN
+							UPDATE mimer_key SET size = size - OLD.size WHERE key_name = OLD.key_name;
+							UPDATE mimer_key SET size = size + NEW.size WHERE key_name = NEW.key_name;
+						ELSIF (NEW.size <> OLD.size) THEN
+							UPDATE mimer_key SET size = size + NEW.size - OLD.size WHERE key_name = OLD.key_name;
+						END IF;
+					ELSIF (TG_OP = 'INSERT') THEN
+						UPDATE mimer_key SET size = size + NEW.size, note_count = note_count + 1 WHERE key_name = NEW.key_name;
+					END IF;
+				    RETURN NULL;
+				END;
+				$$ language 'plpgsql';
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_note_size
+				AFTER INSERT OR UPDATE OR DELETE ON mimer_note
+				    FOR EACH ROW EXECUTE FUNCTION update_key_size();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+				""";
+			command.ExecuteNonQuery();
+		}
+
 		// Note-related methods
 		private async Task<long> DoCreateNote(NpgsqlCommand command, Guid id, Guid keyName, List<INoteItem> items) {
 			long writtenBytes = 0;

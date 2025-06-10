@@ -5,6 +5,60 @@ using Mimer.Notes.Model.DataTypes;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {
+		// Database creation methods
+		private void CreateKeyTables() {
+			using var command = _postgres.CreateCommand();
+			command.CommandText = """
+				CREATE TABLE IF NOT EXISTS public."mimer_key" (
+				  id uuid NOT NULL PRIMARY KEY,
+				  user_id uuid NOT NULL,
+				  key_name uuid NOT NULL,
+				  data text NOT NULL,
+				  size bigint NOT NULL,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp
+				);
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_mimer_key_modified BEFORE UPDATE ON public."mimer_key" FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_key_size
+				AFTER INSERT OR UPDATE OR DELETE ON mimer_key
+				    FOR EACH ROW EXECUTE FUNCTION update_user_stats_size();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+
+				CREATE OR REPLACE FUNCTION update_key_size()
+				RETURNS TRIGGER AS $$
+				BEGIN
+				 	IF (TG_OP = 'DELETE') THEN
+						UPDATE mimer_key SET size = size - OLD.size, note_count = note_count - 1 WHERE key_name = OLD.key_name;
+					ELSIF (TG_OP = 'UPDATE') THEN
+						IF (NEW.key_name <> OLD.key_name) THEN
+							UPDATE mimer_key SET size = size - OLD.size WHERE key_name = OLD.key_name;
+							UPDATE mimer_key SET size = size + NEW.size WHERE key_name = NEW.key_name;
+						ELSIF (NEW.size <> OLD.size) THEN
+							UPDATE mimer_key SET size = size + NEW.size - OLD.size WHERE key_name = OLD.key_name;
+						END IF;
+					ELSIF (TG_OP = 'INSERT') THEN
+						UPDATE mimer_key SET size = size + NEW.size, note_count = note_count + 1 WHERE key_name = NEW.key_name;
+					END IF;
+				    RETURN NULL;
+				END;
+				$$ language 'plpgsql';
+				""";
+			command.ExecuteNonQuery();
+		}
+
 		// Key-related methods
 		public async Task<UserSize> GetUserSize(Guid userId) {
 			try {
@@ -156,5 +210,6 @@ namespace Mimer.Notes.Server {
 			}
 			return false;
 		}
+
 	}
 }

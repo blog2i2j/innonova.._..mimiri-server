@@ -4,6 +4,21 @@ using Mimer.Notes.Model.DataTypes;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {
+		// Database creation methods
+		private void CreateBlogTables() {
+			using var command = _postgres.CreateCommand();
+			command.CommandText = """
+				CREATE TABLE IF NOT EXISTS public."blog_post" (
+				  id uuid NOT NULL PRIMARY KEY,
+				  title character varying(50) NOT NULL,
+				  file_name character varying(50) NOT NULL,
+				  published boolean NOT NULL DEFAULT false,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp
+				);
+				""";
+			command.ExecuteNonQuery();
+		}
+
 		// Blog post-related methods
 		public async Task<bool> AddBlogPost(BlogPost blogPost) {
 			try {
