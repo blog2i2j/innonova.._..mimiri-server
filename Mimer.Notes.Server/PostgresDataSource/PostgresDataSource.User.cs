@@ -1,13 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using Mimer.Framework;
 using Mimer.Framework.Json;
 using Mimer.Notes.Model.DataTypes;
-using Mimer.Notes.Model.Requests;
 using Npgsql;
 
 namespace Mimer.Notes.Server {

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Mimer.Framework;
 using Mimer.Notes.Model.DataTypes;
 using Mimer.Notes.Model.Requests;

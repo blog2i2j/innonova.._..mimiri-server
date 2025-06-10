@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Mimer.Framework;
 using Mimer.Framework.Json;
 using Mimer.Notes.Model.DataTypes;
-using Npgsql;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {

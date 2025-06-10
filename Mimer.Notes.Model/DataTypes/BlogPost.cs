@@ -48,6 +48,15 @@ namespace Mimer.Notes.Model.DataTypes {
 			}
 		}
 
+		public bool Published {
+			get {
+				return _json.Boolean("published");
+			}
+			set {
+				_json.Boolean("published", value);
+			}
+		}
+
 		public JsonObject Json() {
 			return _json;
 		}

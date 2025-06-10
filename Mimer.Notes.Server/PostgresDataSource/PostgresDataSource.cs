@@ -1,10 +1,5 @@
 ﻿using Mimer.Framework;
-using Mimer.Framework.Json;
-using Mimer.Notes.Model.DataTypes;
-using Mimer.Notes.Model.Requests;
 using Npgsql;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Mimer.Notes.Server {
 	public partial class PostgresDataSource {
@@ -239,10 +234,10 @@ CREATE TABLE IF NOT EXISTS public."global_stats" (
 );
 
 CREATE TABLE IF NOT EXISTS public."blog_post" (
-  user_id uuid NOT NULL PRIMARY KEY,
+  id uuid NOT NULL PRIMARY KEY,
   title character varying(50) NOT NULL,
-	published boolean NOT NULL DEFAULT false,
   file_name character varying(50) NOT NULL,
+	published boolean NOT NULL DEFAULT false,
   created timestamp without time zone NOT NULL DEFAULT current_timestamp
 );
 
