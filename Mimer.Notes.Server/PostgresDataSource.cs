@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS public."blog_post" (
 );
 
 CREATE TABLE IF NOT EXISTS public."comment" (
-  user_id uuid NOT NULL PRIMARY KEY,
+  id uuid NOT NULL PRIMARY KEY,
 	post_id uuid NOT NULL,
 	user_id uuid NOT NULL,
 	username character varying(50) NOT NULL,
@@ -1174,7 +1174,7 @@ notes = COALESCE((SELECT sum(note_count) FROM mimer_key as k where k.user_id = s
 		public async Task<bool> AddComment(Comment comment, Guid userId) {
 			try {
 				using var command = _postgres.CreateCommand();
-				command.CommandText = @"INSERT INTO comment (id, post_id, user_id, username, comment, moderation_state, created, modified) VALUES (@id, @post_id, @user_id, @username, @comment, @moderation_state, @created, @modified)";
+				command.CommandText = @"INSERT INTO comment (id, post_id, user_id, username, comment) VALUES (@id, @post_id, @user_id, @username, @comment)";
 				command.Parameters.AddWithValue("@id", comment.Id);
 				command.Parameters.AddWithValue("@post_id", comment.PostId);
 				command.Parameters.AddWithValue("@user_id", userId);

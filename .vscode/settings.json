@@ -1,4 +1,5 @@
 {
 	"editor.defaultFormatter": "ms-dotnettools.csharp",
-	"editor.formatOnSave": true
+	"editor.formatOnSave": true,
+	"window.title": "${dirty}Mimiri Server",
 }
