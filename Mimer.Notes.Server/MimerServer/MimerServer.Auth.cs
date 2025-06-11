@@ -198,6 +198,9 @@ namespace Mimer.Notes.Server {
 					}
 				}
 			}
+			else {
+				Dev.Log("old user not found", request.OldUsername);
+			}
 			return null;
 		}
 

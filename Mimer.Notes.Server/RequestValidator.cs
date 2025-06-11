@@ -90,11 +90,12 @@ namespace Mimer.Notes.Server {
 					};
 					_last = _last.Next;
 				}
+				return request.IsValid;
 			}
 			catch (Exception ex) {
 				Dev.Log(ex);
 			}
-			return request.IsValid;
+			return false;
 		}
 
 		public bool ValidateRequest(IRepeatableRequest request) {

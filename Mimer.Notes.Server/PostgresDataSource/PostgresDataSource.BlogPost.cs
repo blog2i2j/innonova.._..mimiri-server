@@ -19,15 +19,17 @@ namespace Mimer.Notes.Server {
 			command.ExecuteNonQuery();
 		}
 
-		public async Task<bool> AddBlogPost(BlogPost blogPost) {
+		public async Task<bool> SetBlogPost(BlogPost blogPost) {
 			try {
 				using var command = _postgres.CreateCommand();
-				command.CommandText = @"INSERT INTO blog_post (id, title, published, content) VALUES (@id, @title, @published, @content)";
 				command.Parameters.AddWithValue("@id", blogPost.Id);
 				command.Parameters.AddWithValue("@title", blogPost.Title);
-				command.Parameters.AddWithValue("@published", false); // Always start as unpublished for security
 				command.Parameters.AddWithValue("@content", blogPost.Content);
-				await command.ExecuteNonQueryAsync();
+				command.CommandText = @"UPDATE blog_post set title = @title, content = @content WHERE id = @id";
+				if (await command.ExecuteNonQueryAsync() == 0) {
+					command.CommandText = @"INSERT INTO blog_post (id, title, content) VALUES (@id, @title, @content)";
+					await command.ExecuteNonQueryAsync();
+				}
 				return true;
 			}
 			catch (Exception ex) {
@@ -50,11 +52,11 @@ namespace Mimer.Notes.Server {
 			}
 		}
 
-		public async Task<List<BlogPost>> GetLatestBlogPosts(int count) {
+		public async Task<List<BlogPost>> GetLatestBlogPosts(int count, bool includeContent) {
 			try {
 				using var command = _postgres.CreateCommand();
-				command.CommandText = @"
-					SELECT id, title, content, published, created
+				command.CommandText = $@"
+					SELECT id, title, published, created {(includeContent ? ", content" : "")}
 					FROM blog_post
 					WHERE published = true
 					ORDER BY created DESC
@@ -66,9 +68,9 @@ namespace Mimer.Notes.Server {
 					posts.Add(new BlogPost {
 						Id = reader.GetGuid(0),
 						Title = reader.GetString(1),
-						Content = reader.GetString(2),
-						Published = reader.GetBoolean(3),
-						Created = reader.GetDateTime(4)
+						Published = reader.GetBoolean(2),
+						Created = reader.GetDateTime(3),
+						Content = includeContent ? reader.GetString(4) : "",
 					});
 				}
 				return posts;
@@ -76,6 +78,32 @@ namespace Mimer.Notes.Server {
 			catch (Exception ex) {
 				Dev.Log(_connectionString, ex);
 				return new List<BlogPost>();
+			}
+		}
+
+		public async Task<BlogPost?> GetBlogPostById(Guid id) {
+			try {
+				using var command = _postgres.CreateCommand();
+				command.CommandText = @"
+					SELECT id, title, published, created, content
+					FROM blog_post
+					WHERE id = @id AND published = true";
+				command.Parameters.AddWithValue("@id", id);
+				using var reader = await command.ExecuteReaderAsync();
+				if (await reader.ReadAsync()) {
+					return new BlogPost {
+						Id = reader.GetGuid(0),
+						Title = reader.GetString(1),
+						Published = reader.GetBoolean(2),
+						Created = reader.GetDateTime(3),
+						Content = reader.GetString(4),
+					};
+				}
+				return null;
+			}
+			catch (Exception ex) {
+				Dev.Log(_connectionString, ex);
+				return null;
 			}
 		}
 

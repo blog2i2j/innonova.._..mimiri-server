@@ -80,5 +80,19 @@ namespace Mimer.Notes.Server {
 				Dev.Log(ex);
 			}
 		}
+
+		public async Task NotifyBlogPost() {
+			try {
+				var serverRequest = new ServerNotificationRequest();
+				serverRequest.Type = "blog-post";
+				_signature.SignRequest("mimer", serverRequest);
+				var content = new StringContent(serverRequest.ToJsonString(), Encoding.UTF8, "application/json");
+				var response = await _httpClient.PostAsync($"{NotificationsUrl}/api/notification/send", content);
+				response.EnsureSuccessStatusCode();
+			}
+			catch (Exception ex) {
+				Dev.Log(ex);
+			}
+		}
 	}
 }

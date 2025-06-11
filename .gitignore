@@ -300,3 +300,4 @@ publish.api/
 publish.signalr/
 deployment/
 deploy.dev.webapi.sh
+deploy.dev.signalr.sh

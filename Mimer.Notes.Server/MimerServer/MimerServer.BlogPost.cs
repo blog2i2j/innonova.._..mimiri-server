@@ -5,7 +5,7 @@ using Mimer.Notes.Model.Responses;
 
 namespace Mimer.Notes.Server {
 	public partial class MimerServer {
-		public async Task<BasicResponse?> AddBlogPost(AddBlogPostRequest request) {
+		public async Task<BasicResponse?> PutBlogPost(PutBlogPostRequest request) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
 			}
@@ -21,13 +21,14 @@ namespace Mimer.Notes.Server {
 						Title = request.Title,
 						Content = request.Content
 					};
-					if (await _dataSource.AddBlogPost(blogPost)) {
+					if (await _dataSource.SetBlogPost(blogPost)) {
 						return new BasicResponse();
 					}
 				}
 			}
 			return null;
 		}
+
 		public async Task<BasicResponse?> PublishBlogPost(PublishBlogPostRequest request) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
@@ -40,6 +41,7 @@ namespace Mimer.Notes.Server {
 						return null;
 					}
 					if (await _dataSource.PublishBlogPost(request.Id)) {
+						await NotifyBlogPost();
 						return new BasicResponse();
 					}
 				}
@@ -56,10 +58,29 @@ namespace Mimer.Notes.Server {
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
 					BlogPostsResponse response = new BlogPostsResponse();
-					foreach (var blogPost in await _dataSource.GetLatestBlogPosts(request.Count)) {
+					foreach (var blogPost in await _dataSource.GetLatestBlogPosts(request.Count, request.IncludeContent)) {
 						response.AddBlogPost(blogPost);
 					}
 					return response;
+				}
+			}
+			return null;
+		}
+
+		public async Task<BlogPostsResponse?> GetBlogPost(GetBlogPostRequest request) {
+			if (!_requestValidator.ValidateRequest(request)) {
+				return null;
+			}
+			var user = await _dataSource.GetUser(request.Username);
+			if (user != null) {
+				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
+				if (signer.VerifySignature("user", request)) {
+					var blogPost = await _dataSource.GetBlogPostById(request.Id);
+					if (blogPost != null) {
+						BlogPostsResponse response = new BlogPostsResponse();
+						response.AddBlogPost(blogPost);
+						return response;
+					}
 				}
 			}
 			return null;

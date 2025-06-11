@@ -35,10 +35,20 @@ namespace Mimer.Notes.WebApi.Controllers {
 			return NotFound();
 		}
 
-		[HttpPost("latest-posts")]
+		[HttpPost("blog-posts")]
 		public async Task<IActionResult> GetLatestBlogPosts([FromBody] JsonObject json) {
-			_server.RegisterAction(Info, "feedback/latest-posts");
+			_server.RegisterAction(Info, "feedback/blog-posts");
 			var response = await _server.GetLatestBlogPosts(new GetBlogPostsRequest(json));
+			if (response != null) {
+				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
+			}
+			return NotFound();
+		}
+
+		[HttpPost("blog-post")]
+		public async Task<IActionResult> GetBlogPost([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "feedback/blog-post");
+			var response = await _server.GetBlogPost(new GetBlogPostRequest(json));
 			if (response != null) {
 				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
 			}

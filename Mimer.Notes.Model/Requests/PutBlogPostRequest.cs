@@ -1,35 +1,17 @@
 using Mimer.Framework.Json;
 
 namespace Mimer.Notes.Model.Requests {
-	public class GetBlogPostsRequest : ISignable, IRequestObject, IRepeatableRequest {
+	public class PutBlogPostRequest : ISignable, IRequestObject, INonRepeatableRequest {
 		private JsonObject _json;
 
-		public GetBlogPostsRequest() {
+		public PutBlogPostRequest() {
 			_json = new JsonObject();
 			TimeStamp = DateTime.UtcNow;
 			RequestId = Guid.NewGuid();
 		}
 
-		public GetBlogPostsRequest(JsonObject json) {
+		public PutBlogPostRequest(JsonObject json) {
 			_json = json;
-		}
-
-		public int Count {
-			get {
-				return _json.Int32("count");
-			}
-			set {
-				_json.Int32("count", value);
-			}
-		}
-
-		public bool IncludeContent {
-			get {
-				return _json.Boolean("includeContent");
-			}
-			set {
-				_json.Boolean("includeContent", value);
-			}
 		}
 
 		public string Username {
@@ -38,6 +20,33 @@ namespace Mimer.Notes.Model.Requests {
 			}
 			set {
 				_json.String("username", value);
+			}
+		}
+
+		public Guid Id {
+			get {
+				return _json.Guid("id");
+			}
+			set {
+				_json.Guid("id", value);
+			}
+		}
+
+		public string Title {
+			get {
+				return _json.String("title");
+			}
+			set {
+				_json.String("title", value);
+			}
+		}
+
+		public string Content {
+			get {
+				return _json.String("content");
+			}
+			set {
+				_json.String("content", value);
 			}
 		}
 
@@ -88,7 +97,8 @@ namespace Mimer.Notes.Model.Requests {
 			get {
 				return !(
 					string.IsNullOrWhiteSpace(Username) ||
-					Count == 0
+					string.IsNullOrWhiteSpace(Title) ||
+					string.IsNullOrWhiteSpace(Content)
 				);
 			}
 		}

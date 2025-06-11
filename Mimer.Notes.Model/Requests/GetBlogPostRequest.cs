@@ -1,26 +1,17 @@
 using Mimer.Framework.Json;
 
 namespace Mimer.Notes.Model.Requests {
-	public class AddBlogPostRequest : ISignable, IRequestObject, INonRepeatableRequest {
+	public class GetBlogPostRequest : ISignable, IRequestObject, IRepeatableRequest {
 		private JsonObject _json;
 
-		public AddBlogPostRequest() {
+		public GetBlogPostRequest() {
 			_json = new JsonObject();
 			TimeStamp = DateTime.UtcNow;
 			RequestId = Guid.NewGuid();
 		}
 
-		public AddBlogPostRequest(JsonObject json) {
+		public GetBlogPostRequest(JsonObject json) {
 			_json = json;
-		}
-
-		public string Username {
-			get {
-				return _json.String("username");
-			}
-			set {
-				_json.String("username", value);
-			}
 		}
 
 		public Guid Id {
@@ -32,21 +23,12 @@ namespace Mimer.Notes.Model.Requests {
 			}
 		}
 
-		public string Title {
+		public string Username {
 			get {
-				return _json.String("title");
+				return _json.String("username");
 			}
 			set {
-				_json.String("title", value);
-			}
-		}
-
-		public string Content {
-			get {
-				return _json.String("content");
-			}
-			set {
-				_json.String("content", value);
+				_json.String("username", value);
 			}
 		}
 
@@ -97,8 +79,7 @@ namespace Mimer.Notes.Model.Requests {
 			get {
 				return !(
 					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(Title) ||
-					string.IsNullOrWhiteSpace(Content)
+					Id == Guid.Empty
 				);
 			}
 		}

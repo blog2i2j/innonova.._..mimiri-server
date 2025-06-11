@@ -15,10 +15,10 @@ namespace Mimer.Notes.WebApi.Controllers {
 			_server = server;
 		}
 
-		[HttpPost("add-blog-post")]
-		public async Task<IActionResult> AddBlogPost([FromBody] JsonObject json) {
-			_server.RegisterAction(Info, "admin/add-blog-post");
-			var response = await _server.AddBlogPost(new AddBlogPostRequest(json));
+		[HttpPost("put-blog-post")]
+		public async Task<IActionResult> PutBlogPost([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "admin/put-blog-post");
+			var response = await _server.PutBlogPost(new PutBlogPostRequest(json));
 			if (response != null) {
 				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
 			}
