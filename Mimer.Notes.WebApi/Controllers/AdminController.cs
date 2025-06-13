@@ -15,26 +15,6 @@ namespace Mimer.Notes.WebApi.Controllers {
 			_server = server;
 		}
 
-		[HttpPost("put-blog-post")]
-		public async Task<IActionResult> PutBlogPost([FromBody] JsonObject json) {
-			_server.RegisterAction(Info, "admin/put-blog-post");
-			var response = await _server.PutBlogPost(new PutBlogPostRequest(json));
-			if (response != null) {
-				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
-			}
-			return Conflict();
-		}
-
-		[HttpPost("publish-blog-post")]
-		public async Task<IActionResult> PublishBlogPost([FromBody] JsonObject json) {
-			_server.RegisterAction(Info, "admin/publish-blog-post");
-			var response = await _server.PublishBlogPost(new PublishBlogPostRequest(json));
-			if (response != null) {
-				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
-			}
-			return Conflict();
-		}
-
 		[HttpPost("promote-user")]
 		public async Task<IActionResult> PromoteUser([FromBody] JsonObject json) {
 			_server.RegisterAction(Info, "admin/promote-user");

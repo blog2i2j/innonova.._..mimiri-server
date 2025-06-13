@@ -26,7 +26,6 @@ namespace Mimer.Notes.Server {
 				CreateNoteTables();
 				CreateShareTables();
 				CreateStatsTables();
-				CreateBlogTables();
 				CreateCommentTables();
 			}
 			catch (Exception ex) {

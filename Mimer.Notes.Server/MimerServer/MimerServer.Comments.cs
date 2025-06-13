@@ -30,23 +30,5 @@ namespace Mimer.Notes.Server {
 			return null;
 		}
 
-		public async Task<CommentsResponse?> GetCommentsByPost(GetCommentsRequest request) {
-			if (!_requestValidator.ValidateRequest(request)) {
-				return null;
-			}
-			var user = await _dataSource.GetUser(request.Username);
-			if (user != null) {
-				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
-				if (signer.VerifySignature("user", request)) {
-					var comments = await _dataSource.GetCommentsByPostId(request.PostId);
-					var response = new CommentsResponse();
-					foreach (var comment in comments) {
-						response.AddCommentInfo(comment);
-					}
-					return response;
-				}
-			}
-			return null;
-		}
 	}
 }

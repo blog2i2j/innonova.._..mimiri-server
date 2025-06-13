@@ -39,6 +39,15 @@ namespace Mimer.Notes.Model.DataTypes {
 			}
 		}
 
+		public DateTime PublishDate {
+			get {
+				return _json.DateTime("publishDate");
+			}
+			set {
+				_json.DateTime("publishDate", value);
+			}
+		}
+
 		public string Content {
 			get {
 				return _json.String("content");
