@@ -18,7 +18,7 @@ namespace Mimer.Notes.Server {
 				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp
 				);
 
-				CREATE INDEX idx_mimer_note_keyname_modified ON mimer_note (key_name, modified);
+				CREATE INDEX IF NOT EXISTS idx_mimer_note_keyname_modified ON mimer_note (key_name, modified);
 
 				DO
 				$$BEGIN
@@ -39,7 +39,7 @@ namespace Mimer.Notes.Server {
 				  PRIMARY KEY (note_id, item_type)
 				);
 
-				CREATE INDEX idx_mimer_note_item_note_id ON mimer_note_item (note_id);
+				CREATE INDEX IF NOT EXISTS idx_mimer_note_item_note_id ON mimer_note_item (note_id);
 
 				DO
 				$$BEGIN

@@ -16,12 +16,18 @@ namespace Mimer.Notes.WebApi.Controllers {
 			_server = server;
 		}
 
+		[HttpGet()]
+		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+		public IActionResult Get() {
+			return Ok("OK");
+		}
+
 		[HttpPost("changes-since")]
 		public async Task<IActionResult> ChangesSince([FromBody] JsonObject json) {
 			_server.RegisterAction(Info, "sync/changes-since");
 			var response = await _server.Sync(new SyncRequest(json));
 			if (response == null) {
-				return Unauthorized();
+				return NotFound();
 			}
 			return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
 		}

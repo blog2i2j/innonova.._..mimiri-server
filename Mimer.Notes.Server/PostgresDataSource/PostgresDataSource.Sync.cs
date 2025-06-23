@@ -16,12 +16,12 @@ namespace Mimer.Notes.Server {
 				var notesMap = new Dictionary<Guid, SyncNoteInfo>();
 				using (var command = new NpgsqlCommand("", connection)) {
 					command.CommandText = @"
-SELECT n.id, n.key_name, n.modified, n.created, ni.item_type, ni.version, ni.data, ni.modified as item_modified, ni.created as item_created
-FROM mimer_note n
-INNER JOIN mimer_key k ON k.key_name = n.key_name
-LEFT JOIN mimer_note_item ni ON ni.note_id = n.id
-WHERE k.user_id = @user_id AND n.modified >= @since
-ORDER BY n.modified DESC, ni.item_type";
+			SELECT n.id, n.key_name, n.modified, n.created, ni.item_type, ni.version, ni.data, ni.modified as item_modified, ni.created as item_created
+			FROM mimer_note n
+			INNER JOIN mimer_key k ON k.key_name = n.key_name
+			LEFT JOIN mimer_note_item ni ON ni.note_id = n.id
+			WHERE k.user_id = @user_id AND n.modified >= @since
+			ORDER BY n.modified DESC, ni.item_type";
 					command.Parameters.AddWithValue("@user_id", userId);
 					command.Parameters.AddWithValue("@since", since);
 
@@ -55,10 +55,10 @@ ORDER BY n.modified DESC, ni.item_type";
 
 				using (var command = new NpgsqlCommand("", connection)) {
 					command.CommandText = @"
-SELECT id, key_name, data, created, modified
-FROM mimer_key
-WHERE user_id = @user_id AND modified >= @since
-ORDER BY modified DESC";
+			SELECT id, key_name, data, created, modified
+			FROM mimer_key
+			WHERE user_id = @user_id AND modified >= @since
+			ORDER BY modified DESC";
 					command.Parameters.AddWithValue("@user_id", userId);
 					command.Parameters.AddWithValue("@since", since);
 
