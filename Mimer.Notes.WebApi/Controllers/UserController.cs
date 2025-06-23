@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Mimer.Framework;
 using Mimer.Framework.Json;
 using Mimer.Notes.Model.Requests;
 using Mimer.Notes.Server;
@@ -9,7 +10,13 @@ namespace Mimer.Notes.WebApi.Controllers {
 	[ApiController]
 	[Route("api/user")]
 	public class UserController : MimerController {
+		private class RecentIp {
+			public string IpAddress { get; set; } = string.Empty;
+			public DateTime Timestamp { get; set; }
+		}
+
 		private MimerServer _server;
+		private static List<RecentIp> _recentIps = new List<RecentIp>();
 
 		public UserController(MimerServer server) {
 			_server = server;
@@ -21,7 +28,20 @@ namespace Mimer.Notes.WebApi.Controllers {
 			if (json.Has("keyId")) {
 				json = _server.DecryptRequest(json);
 			}
-			var response = await _server.CreateUser(new CreateUserRequest(json));
+			var req = new CreateUserRequest(json);
+			if (req.Username.StartsWith("mimiri_a_")) {
+				var ip = HttpContext.Request.Headers["x-forwarded-for"].FirstOrDefault() ?? "";
+				if (!string.IsNullOrEmpty(ip)) {
+					_recentIps.RemoveAll(r => DateTime.UtcNow.Subtract(r.Timestamp).TotalMinutes >= 5);
+					if (_recentIps.Any(r => r.IpAddress == ip)) {
+						_recentIps.First(r => r.IpAddress == ip).Timestamp = DateTime.UtcNow;
+						Dev.Log($"IP address {ip} used too recently for user creation");
+						return Conflict("IP address too recently used for user creation");
+					}
+					_recentIps.Add(new RecentIp { IpAddress = ip, Timestamp = DateTime.UtcNow });
+				}
+			}
+			var response = await _server.CreateUser(req, Info);
 			if (response != null) {
 				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
 			}

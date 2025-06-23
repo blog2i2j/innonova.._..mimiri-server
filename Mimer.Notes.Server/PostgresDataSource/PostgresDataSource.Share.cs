@@ -99,7 +99,7 @@ namespace Mimer.Notes.Server {
 					result.Add(new DbShareOffer {
 						Id = reader.GetGuid(0),
 						Sender = reader.GetString(1),
-						Code = reader.GetString(2),
+						Code = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
 						Data = reader.GetString(3)
 					});
 				}

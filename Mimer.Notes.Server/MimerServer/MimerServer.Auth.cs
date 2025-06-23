@@ -119,7 +119,7 @@ namespace Mimer.Notes.Server {
 			return response;
 		}
 
-		public async Task<BasicResponse?> CreateUser(CreateUserRequest request) {
+		public async Task<BasicResponse?> CreateUser(CreateUserRequest request, ClientInfo clientInfo) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
 			}
