@@ -47,13 +47,21 @@ namespace Mimer.Notes.Model.Responses {
 				_json.String("data", value);
 			}
 		}
-
 		public DateTime Modified {
 			get {
 				return _json.DateTime("modified");
 			}
 			set {
 				_json.DateTime("modified", value);
+			}
+		}
+
+		public DateTime Created {
+			get {
+				return _json.DateTime("created");
+			}
+			set {
+				_json.DateTime("created", value);
 			}
 		}
 
@@ -93,13 +101,21 @@ namespace Mimer.Notes.Model.Responses {
 				_json.Guid("keyName", value);
 			}
 		}
-
 		public DateTime Modified {
 			get {
 				return _json.DateTime("modified");
 			}
 			set {
 				_json.DateTime("modified", value);
+			}
+		}
+
+		public DateTime Created {
+			get {
+				return _json.DateTime("created");
+			}
+			set {
+				_json.DateTime("created", value);
 			}
 		}
 
@@ -113,7 +129,6 @@ namespace Mimer.Notes.Model.Responses {
 			}
 		}
 	}
-
 	public class SyncKeyInfo {
 		private JsonObject _json;
 
@@ -140,6 +155,15 @@ namespace Mimer.Notes.Model.Responses {
 			}
 			set {
 				_json.Guid("name", value);
+			}
+		}
+
+		public string Data {
+			get {
+				return _json.String("data");
+			}
+			set {
+				_json.String("data", value);
 			}
 		}
 

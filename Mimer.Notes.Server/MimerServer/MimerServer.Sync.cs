@@ -13,11 +13,13 @@ namespace Mimer.Notes.Server {
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
 					var response = new SyncResponse();
-					var notes = await _dataSource.GetNotesModifiedSince(user.Id, request.Since);
+
+					var (notes, keys) = await _dataSource.GetChangedDataSince(user.Id, request.Since);
+
 					foreach (var note in notes) {
 						response.AddNote(note);
 					}
-					var keys = await _dataSource.GetKeysModifiedSince(user.Id, request.Since);
+
 					foreach (var key in keys) {
 						response.AddKey(key);
 					}

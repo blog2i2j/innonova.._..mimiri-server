@@ -18,6 +18,8 @@ namespace Mimer.Notes.Server {
 				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp
 				);
 
+				CREATE INDEX idx_mimer_note_keyname_modified ON mimer_note (key_name, modified);
+
 				DO
 				$$BEGIN
 				CREATE TRIGGER update_mimer_note_modified BEFORE UPDATE ON public."mimer_note"  FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
@@ -36,6 +38,8 @@ namespace Mimer.Notes.Server {
 				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp,
 				  PRIMARY KEY (note_id, item_type)
 				);
+
+				CREATE INDEX idx_mimer_note_item_note_id ON mimer_note_item (note_id);
 
 				DO
 				$$BEGIN
