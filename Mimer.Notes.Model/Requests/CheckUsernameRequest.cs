@@ -49,13 +49,17 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Guid("requestId", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(Pow)
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username) ||
+						string.IsNullOrWhiteSpace(Pow)
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

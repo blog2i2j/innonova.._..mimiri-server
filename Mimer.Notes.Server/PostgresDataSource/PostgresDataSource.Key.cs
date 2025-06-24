@@ -15,15 +15,24 @@ namespace Mimer.Notes.Server {
 				  data text NOT NULL,
 				  size bigint NOT NULL,
 				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
-				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp
+				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp,
+					sync bigint NOT NULL DEFAULT nextval('sync_sequence')
 				);
 
-				CREATE INDEX IF NOT EXISTS idx_mimer_key_user_modified ON mimer_key (user_id, modified);
+				CREATE INDEX IF NOT EXISTS idx_mimer_key_user_sync ON mimer_key (user_id, sync);
 				CREATE INDEX IF NOT EXISTS idx_mimer_key_keyname_userid ON mimer_key (key_name, user_id);
 
 				DO
 				$$BEGIN
 				CREATE TRIGGER update_mimer_key_modified BEFORE UPDATE ON public."mimer_key" FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+				EXCEPTION
+				   WHEN duplicate_object THEN
+				      NULL;
+				END;$$;
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER update_mimer_key_sync BEFORE UPDATE ON public."mimer_key" FOR EACH ROW EXECUTE PROCEDURE update_sync_column();
 				EXCEPTION
 				   WHEN duplicate_object THEN
 				      NULL;

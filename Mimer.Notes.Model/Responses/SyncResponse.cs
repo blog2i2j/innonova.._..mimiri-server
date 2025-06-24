@@ -119,6 +119,15 @@ namespace Mimer.Notes.Model.Responses {
 			}
 		}
 
+		public long Sync {
+			get {
+				return _json.Int64("sync");
+			}
+			set {
+				_json.Int64("sync", value);
+			}
+		}
+
 		public void AddItem(SyncNoteItemInfo item) {
 			_json.Array("items").Add(item.Json);
 		}
@@ -182,6 +191,15 @@ namespace Mimer.Notes.Model.Responses {
 			}
 			set {
 				_json.DateTime("created", value);
+			}
+		}
+
+		public long Sync {
+			get {
+				return _json.Int64("sync");
+			}
+			set {
+				_json.Int64("sync", value);
 			}
 		}
 

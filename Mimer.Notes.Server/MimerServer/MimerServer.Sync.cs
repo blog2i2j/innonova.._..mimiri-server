@@ -14,7 +14,7 @@ namespace Mimer.Notes.Server {
 				if (signer.VerifySignature("user", request)) {
 					var response = new SyncResponse();
 
-					var (notes, keys) = await _dataSource.GetChangedDataSince(user.Id, request.Since);
+					var (notes, keys) = await _dataSource.GetChangedDataSince(user.Id, request.NoteSince, request.KeySince);
 
 					foreach (var note in notes) {
 						response.AddNote(note);
@@ -29,5 +29,16 @@ namespace Mimer.Notes.Server {
 			}
 			return null;
 		}
+
+		// private string CompressToBase64(string data) {
+		// 	byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+		// 	using (var outputStream = new MemoryStream()) {
+		// 		using (var gzipStream = new GZipStream(outputStream, CompressionMode.Compress)) {
+		// 			gzipStream.Write(dataBytes, 0, dataBytes.Length);
+		// 		}
+		// 		byte[] compressedBytes = outputStream.ToArray();
+		// 		return Convert.ToBase64String(compressedBytes);
+		// 	}
+		// }
 	}
 }

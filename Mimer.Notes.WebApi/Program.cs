@@ -43,7 +43,11 @@ builder.Services.AddControllers(options => {
 builder.Services.AddCors(options => {
 	options.AddPolicy("Main",
 			policy => {
-				policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader();
+				policy.WithOrigins(allowedOrigins)
+					.AllowAnyMethod()
+					.AllowAnyHeader()
+					.SetPreflightMaxAge(TimeSpan.FromMinutes(4))
+					.AllowCredentials();
 			});
 });
 

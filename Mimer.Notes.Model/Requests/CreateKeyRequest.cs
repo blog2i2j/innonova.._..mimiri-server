@@ -137,20 +137,24 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Guid("requestId", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(PrivateKey) ||
-					string.IsNullOrWhiteSpace(Algorithm) ||
-					string.IsNullOrWhiteSpace(AsymmetricAlgorithm) ||
-					string.IsNullOrWhiteSpace(PublicKey) ||
-					string.IsNullOrWhiteSpace(PrivateKey) ||
-					string.IsNullOrWhiteSpace(Metadata) ||
-					Id == Guid.Empty ||
-					Name == Guid.Empty
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username) ||
+						string.IsNullOrWhiteSpace(PrivateKey) ||
+						string.IsNullOrWhiteSpace(Algorithm) ||
+						string.IsNullOrWhiteSpace(AsymmetricAlgorithm) ||
+						string.IsNullOrWhiteSpace(PublicKey) ||
+						string.IsNullOrWhiteSpace(PrivateKey) ||
+						string.IsNullOrWhiteSpace(Metadata) ||
+						Id == Guid.Empty ||
+						Name == Guid.Empty
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

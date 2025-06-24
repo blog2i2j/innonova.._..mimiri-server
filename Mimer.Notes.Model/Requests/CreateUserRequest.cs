@@ -195,21 +195,25 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Guid("requestId", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(PrivateKey) ||
-					string.IsNullOrWhiteSpace(Salt) ||
-					string.IsNullOrWhiteSpace(Algorithm) ||
-					string.IsNullOrWhiteSpace(PasswordSalt) ||
-					string.IsNullOrWhiteSpace(PasswordHash) ||
-					string.IsNullOrWhiteSpace(PasswordAlgorithm) ||
-					string.IsNullOrWhiteSpace(SymmetricAlgorithm) ||
-					string.IsNullOrWhiteSpace(Data) ||
-					string.IsNullOrWhiteSpace(SymmetricKey)
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username) ||
+						string.IsNullOrWhiteSpace(PrivateKey) ||
+						string.IsNullOrWhiteSpace(Salt) ||
+						string.IsNullOrWhiteSpace(Algorithm) ||
+						string.IsNullOrWhiteSpace(PasswordSalt) ||
+						string.IsNullOrWhiteSpace(PasswordHash) ||
+						string.IsNullOrWhiteSpace(PasswordAlgorithm) ||
+						string.IsNullOrWhiteSpace(SymmetricAlgorithm) ||
+						string.IsNullOrWhiteSpace(Data) ||
+						string.IsNullOrWhiteSpace(SymmetricKey)
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

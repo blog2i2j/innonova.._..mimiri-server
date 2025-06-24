@@ -43,6 +43,21 @@ namespace Mimer.Notes.Server {
 			    RETURN NEW;
 			END;
 			$$ language 'plpgsql';
+
+			CREATE OR REPLACE FUNCTION update_sync_column()
+			RETURNS TRIGGER AS $$
+			BEGIN
+			    NEW.sync = nextval('sync_sequence');
+			    RETURN NEW;
+			END;
+			$$ language 'plpgsql';
+
+			CREATE SEQUENCE IF NOT EXISTS sync_sequence
+					START WITH 1
+					INCREMENT BY 1
+					NO MINVALUE
+					NO MAXVALUE
+					CACHE 1;
 			""";
 			command.ExecuteNonQuery();
 		}

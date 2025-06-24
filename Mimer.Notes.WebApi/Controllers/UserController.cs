@@ -91,12 +91,18 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("get-data")]
 		public async Task<IActionResult> GetUserData([FromBody] JsonObject json) {
-			_server.RegisterAction(Info, "user/get-data");
-			var response = await _server.GetUserData(new BasicRequest(json));
-			if (response != null) {
-				return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
+			try {
+				_server.RegisterAction(Info, "user/get-data");
+				var response = await _server.GetUserData(new BasicRequest(json));
+				if (response != null) {
+					return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
+				}
+				return NotFound();
 			}
-			return NotFound();
+			catch (Exception ex) {
+				Dev.Log("Error in GetUserData", ex);
+				return StatusCode(500, "Internal server error");
+			}
 		}
 
 		[HttpPost("public-key")]

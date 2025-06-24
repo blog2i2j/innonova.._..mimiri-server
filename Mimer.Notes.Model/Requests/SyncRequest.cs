@@ -23,12 +23,21 @@ namespace Mimer.Notes.Model.Requests {
 			}
 		}
 
-		public DateTime Since {
+		public long NoteSince {
 			get {
-				return _json.DateTime("since");
+				return _json.Int64("noteSince");
 			}
 			set {
-				_json.DateTime("since", value);
+				_json.Int64("noteSince", value);
+			}
+		}
+
+		public long KeySince {
+			get {
+				return _json.Int64("keySince");
+			}
+			set {
+				_json.Int64("keySince", value);
 			}
 		}
 
@@ -76,12 +85,16 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Guid("requestId", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username)
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username)
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

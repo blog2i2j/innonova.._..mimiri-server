@@ -73,13 +73,18 @@ namespace Mimer.Notes.Server {
 		}
 
 		public async Task<UserDataResponse?> GetUserData(BasicRequest request) {
+			Dev.Log("GetUserData");
 			if (!request.IsValid) { // challenge response ensures non repeatability here
 				return null;
 			}
+
+			Dev.Log("GetUserData.1");
 			var user = await _dataSource.GetUser(request.Username);
 			if (user != null) {
+				Dev.Log("GetUserData.2");
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
+					Dev.Log("GetUserData.3");
 					var userType = GetUserType(user.TypeId);
 					var response = new UserDataResponse();
 					response.Data = user.Data;
@@ -90,9 +95,11 @@ namespace Mimer.Notes.Server {
 					response.MaxNoteBytes = userType.MaxNoteBytes;
 					response.MaxNoteCount = userType.MaxNoteCount;
 					response.MaxHistoryEntries = userType.MaxHistoryEntries;
+					Dev.Log("GetUserData.4");
 					return response;
 				}
 			}
+			Dev.Log("GetUserData.5");
 			return null;
 		}
 

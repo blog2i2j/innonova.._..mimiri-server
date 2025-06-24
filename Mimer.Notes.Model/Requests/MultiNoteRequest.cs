@@ -116,14 +116,18 @@ namespace Mimer.Notes.Model.Requests {
 				return _json;
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Type) ||
-					Id == Guid.Empty ||
-					KeyName == Guid.Empty
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Type) ||
+						Id == Guid.Empty ||
+						KeyName == Guid.Empty
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 
@@ -218,10 +222,14 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Guid("requestId", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !string.IsNullOrWhiteSpace(Username) && !Actions.Any(action => !action.IsValid);
+				try {
+					return !string.IsNullOrWhiteSpace(Username) && !Actions.Any(action => !action.IsValid);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

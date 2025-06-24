@@ -92,15 +92,19 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Guid("requestId", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(Recipient) ||
-					string.IsNullOrWhiteSpace(Data) ||
-					KeyName == Guid.Empty
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username) ||
+						string.IsNullOrWhiteSpace(Recipient) ||
+						string.IsNullOrWhiteSpace(Data) ||
+						KeyName == Guid.Empty
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

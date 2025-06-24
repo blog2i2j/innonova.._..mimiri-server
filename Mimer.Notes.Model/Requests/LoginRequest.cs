@@ -41,13 +41,17 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Int32("hashLength", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(Response)
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username) ||
+						string.IsNullOrWhiteSpace(Response)
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

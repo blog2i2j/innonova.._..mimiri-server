@@ -95,11 +95,16 @@ namespace Mimer.Notes.Model.Requests {
 
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username) ||
-					string.IsNullOrWhiteSpace(DisplayName) ||
-					string.IsNullOrWhiteSpace(Comment)
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username) ||
+						string.IsNullOrWhiteSpace(DisplayName) ||
+						string.IsNullOrWhiteSpace(Comment)
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

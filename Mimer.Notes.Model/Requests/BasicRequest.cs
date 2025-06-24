@@ -65,12 +65,16 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Guid("requestId", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username)
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username)
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 

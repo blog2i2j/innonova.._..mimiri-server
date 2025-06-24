@@ -113,14 +113,18 @@ namespace Mimer.Notes.Model.Requests {
 				_json.Guid("requestId", value);
 			}
 		}
-
 		public bool IsValid {
 			get {
-				return !(
-					string.IsNullOrWhiteSpace(Username) ||
-					Id == Guid.Empty ||
-					KeyName == Guid.Empty
-				);
+				try {
+					return !(
+						string.IsNullOrWhiteSpace(Username) ||
+						Id == Guid.Empty ||
+						KeyName == Guid.Empty
+					);
+				}
+				catch {
+					return false;
+				}
 			}
 		}
 
