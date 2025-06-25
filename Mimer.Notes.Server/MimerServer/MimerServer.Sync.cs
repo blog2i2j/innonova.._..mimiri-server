@@ -29,6 +29,30 @@ namespace Mimer.Notes.Server {
 			}
 			return null;
 		}
+		public async Task<SyncPushResponse?> PushSync(SyncPushRequest request) {
+			if (!_requestValidator.ValidateRequest(request)) {
+				return null;
+			}
+			var user = await _dataSource.GetUser(request.Username);
+			if (user != null) {
+				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
+				if (signer.VerifySignature("user", request)) {
+					var results = await _dataSource.ApplyChanges(user.Id, request.Notes, request.Keys);
+					if (results == null) {
+						return null;
+					}
+
+					var response = new SyncPushResponse();
+
+					foreach (var result in results) {
+						response.AddSyncResult(result);
+					}
+
+					return response;
+				}
+			}
+			return null;
+		}
 
 		// private string CompressToBase64(string data) {
 		// 	byte[] dataBytes = Encoding.UTF8.GetBytes(data);

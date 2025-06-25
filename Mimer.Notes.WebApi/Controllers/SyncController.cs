@@ -31,5 +31,17 @@ namespace Mimer.Notes.WebApi.Controllers {
 			}
 			return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
 		}
+
+		[HttpPost("push-changes")]
+		public async Task<IActionResult> PushChanges([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "sync/push-changes");
+			var response = await _server.PushSync(new SyncPushRequest(json));
+			if (response == null) {
+				return BadRequest("Failed to process changes");
+			}
+			return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
+		}
+
+
 	}
 }

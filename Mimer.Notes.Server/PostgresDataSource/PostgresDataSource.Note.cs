@@ -13,7 +13,7 @@ namespace Mimer.Notes.Server {
 				CREATE TABLE IF NOT EXISTS public."mimer_note" (
 				  id uuid NOT NULL PRIMARY KEY,
 				  key_name uuid NOT NULL,
-				  size bigint NOT NULL,
+				  size bigint NOT NULL DEFAULT 0,
 				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
 				  modified timestamp without time zone NOT NULL DEFAULT current_timestamp,
 					sync bigint NOT NULL DEFAULT nextval('sync_sequence')
