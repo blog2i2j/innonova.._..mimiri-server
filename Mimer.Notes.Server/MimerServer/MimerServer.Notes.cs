@@ -12,8 +12,10 @@ namespace Mimer.Notes.Server {
 
 		public async Task<UpdateNoteResponse?> MultiNote(MultiNoteRequest request) {
 			if (!_requestValidator.ValidateRequest(request)) {
+				Dev.Log("MultiNote request not valid");
 				return null;
 			}
+
 			var user = await _dataSource.GetUser(request.Username);
 			if (user != null) {
 				var userType = GetUserType(user.TypeId);
@@ -22,10 +24,12 @@ namespace Mimer.Notes.Server {
 					foreach (var keyName in request.KeyNames) {
 						var key = await _dataSource.GetKeyByName(keyName);
 						if (key == null) {
+							Dev.Log($"MultiNote request failed, key {keyName} not found");
 							return null;
 						}
 						var keySigner = new CryptSignature(key.AsymmetricAlgorithm, key.PublicKey);
 						if (!keySigner.VerifySignature(keyName.ToString(), request)) {
+							Dev.Log($"MultiNote request failed, key {keyName} signature invalid");
 							return null;
 						}
 					}
@@ -102,6 +106,7 @@ namespace Mimer.Notes.Server {
 					}
 				}
 			}
+			Dev.Log("MultiNote failed, user not found or signature invalid");
 			return null;
 		}
 

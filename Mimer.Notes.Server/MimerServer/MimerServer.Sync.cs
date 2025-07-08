@@ -16,6 +16,10 @@ namespace Mimer.Notes.Server {
 
 					var (notes, keys) = await _dataSource.GetChangedDataSince(user.Id, request.NoteSince, request.KeySince);
 
+					if (notes == null || keys == null) {
+						return null;
+					}
+
 					foreach (var note in notes) {
 						response.AddNote(note);
 					}
@@ -41,6 +45,8 @@ namespace Mimer.Notes.Server {
 					if (results == null) {
 						return null;
 					}
+					// TODO check success of results
+					await NotifySync();
 
 					var response = new SyncPushResponse();
 

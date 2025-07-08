@@ -55,10 +55,10 @@ namespace Mimer.Notes.Server {
 				 	IF (TG_OP = 'DELETE') THEN
 						UPDATE mimer_key SET size = size - OLD.size, note_count = note_count - 1 WHERE key_name = OLD.key_name;
 					ELSIF (TG_OP = 'UPDATE') THEN
-						IF (NEW.key_name <> OLD.key_name) THEN
+						IF (NEW.key_name != OLD.key_name) THEN
 							UPDATE mimer_key SET size = size - OLD.size WHERE key_name = OLD.key_name;
 							UPDATE mimer_key SET size = size + NEW.size WHERE key_name = NEW.key_name;
-						ELSIF (NEW.size <> OLD.size) THEN
+						ELSIF (NEW.size != OLD.size) THEN
 							UPDATE mimer_key SET size = size + NEW.size - OLD.size WHERE key_name = OLD.key_name;
 						END IF;
 					ELSIF (TG_OP = 'INSERT') THEN
