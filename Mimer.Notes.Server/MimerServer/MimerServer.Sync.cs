@@ -15,6 +15,10 @@ namespace Mimer.Notes.Server {
 					var response = new SyncResponse();
 
 					var (notes, keys) = await _dataSource.GetChangedDataSince(user.Id, request.NoteSince, request.KeySince);
+					var userSize = await _dataSource.GetUserSize(user.Id);
+
+					response.NoteCount = (int)userSize.NoteCount;
+					response.Size = userSize.Size;
 
 					if (notes == null || keys == null) {
 						return null;
@@ -46,7 +50,9 @@ namespace Mimer.Notes.Server {
 						return null;
 					}
 					// TODO check success of results
-					await NotifySync();
+					if (results.Count > 0) {
+						await NotifySync();
+					}
 
 					var response = new SyncPushResponse();
 

@@ -47,6 +47,7 @@ namespace Mimer.Notes.Model.Responses {
 				_json.String("data", value);
 			}
 		}
+
 		public DateTime Modified {
 			get {
 				return _json.DateTime("modified");
@@ -62,6 +63,15 @@ namespace Mimer.Notes.Model.Responses {
 			}
 			set {
 				_json.DateTime("created", value);
+			}
+		}
+
+		public int Size {
+			get {
+				return _json.Int32("size");
+			}
+			set {
+				_json.Int32("size", value);
 			}
 		}
 
@@ -125,6 +135,15 @@ namespace Mimer.Notes.Model.Responses {
 			}
 			set {
 				_json.Int64("sync", value);
+			}
+		}
+
+		public int Size {
+			get {
+				return _json.Int32("size");
+			}
+			set {
+				_json.Int32("size", value);
 			}
 		}
 
@@ -232,6 +251,24 @@ namespace Mimer.Notes.Model.Responses {
 
 		public void AddKey(SyncKeyInfo key) {
 			_json.Array("keys").Add(key.Json);
+		}
+
+		public int NoteCount {
+			get {
+				return _json.Int32("noteCount");
+			}
+			set {
+				_json.Int32("noteCount", value);
+			}
+		}
+
+		public long Size {
+			get {
+				return _json.Int64("size");
+			}
+			set {
+				_json.Int64("size", value);
+			}
 		}
 
 		public override string ToString() {

@@ -3,3 +3,4 @@ dotnet build \
 	-p:DeployOnBuild=true \
 	-p:PublishProfile=FolderProfile1
 
+echo "Build completed at: $(date)"
