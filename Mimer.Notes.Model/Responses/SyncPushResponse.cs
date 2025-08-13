@@ -7,7 +7,6 @@ namespace Mimer.Notes.Model.Responses {
 
 		public SyncPushResponse() {
 			_json = new JsonObject();
-			_json.Array("results", new JsonArray());
 		}
 
 		public SyncPushResponse(JsonObject json) {
@@ -18,18 +17,13 @@ namespace Mimer.Notes.Model.Responses {
 			_json = new JsonObject(json);
 		}
 
-		public void AddSyncResult(SyncResult result) {
-			if (!_json.Has("results")) {
-				_json.Array("results", new JsonArray());
+		public string Status {
+			get {
+				return _json.String("status");
 			}
-			_json.Array("results").Add(new JsonObject()
-				.String("itemType", result.ItemType)
-				.String("action", result.Action)
-				.Guid("id", result.Id)
-				.String("type", result.Type)
-				.Int64("expected", result.Expected)
-				.Int64("actual", result.Actual)
-			);
+			set {
+				_json.String("status", value);
+			}
 		}
 
 		public override string ToString() {

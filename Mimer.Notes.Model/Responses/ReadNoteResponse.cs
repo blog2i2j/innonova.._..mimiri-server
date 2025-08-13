@@ -18,20 +18,26 @@ namespace Mimer.Notes.Model.Responses {
 			_json = new JsonObject(json);
 		}
 
-		public void AddItem(long version, string type, string data) {
+		public void AddItem(long version, string type, string data, DateTime created, DateTime modified, int size) {
 			_json.Array("items").Add(new JsonObject()
 				.Int64("version", version)
 				.String("type", type)
 				.Boolean("updated", true)
 				.String("data", data)
+				.DateTime("created", created)
+				.DateTime("modified", modified)
+				.Int32("size", size)
 			);
 		}
 
-		public void AddItem(long version, string type) {
+		public void AddItem(long version, string type, DateTime created, DateTime modified, int size) {
 			_json.Array("items").Add(new JsonObject()
 				.Int64("version", version)
 				.String("type", type)
 				.Boolean("updated", false)
+				.DateTime("created", created)
+				.DateTime("modified", modified)
+				.Int32("size", size)
 			);
 		}
 
@@ -62,6 +68,42 @@ namespace Mimer.Notes.Model.Responses {
 			}
 			set {
 				_json.Guid("keyName", value);
+			}
+		}
+
+		public DateTime Modified {
+			get {
+				return _json.DateTime("modified");
+			}
+			set {
+				_json.DateTime("modified", value);
+			}
+		}
+
+		public DateTime Created {
+			get {
+				return _json.DateTime("created");
+			}
+			set {
+				_json.DateTime("created", value);
+			}
+		}
+
+		public long Sync {
+			get {
+				return _json.Int64("sync");
+			}
+			set {
+				_json.Int64("sync", value);
+			}
+		}
+
+		public int Size {
+			get {
+				return _json.Int32("size");
+			}
+			set {
+				_json.Int32("size", value);
 			}
 		}
 

@@ -5,6 +5,9 @@ namespace Mimer.Notes.Model.Requests {
 		long Version { get; set; }
 		string Type { get; set; }
 		string Data { get; set; }
+		DateTime Modified { get; set; }
+		DateTime Created { get; set; }
+		int Size { get; set; }
 	}
 
 	public class NoteItem : INoteItem {
@@ -42,6 +45,33 @@ namespace Mimer.Notes.Model.Requests {
 			}
 			set {
 				_json.String("data", value);
+			}
+		}
+
+		public DateTime Modified {
+			get {
+				return _json.DateTime("modified");
+			}
+			set {
+				_json.DateTime("modified", value);
+			}
+		}
+
+		public DateTime Created {
+			get {
+				return _json.DateTime("created");
+			}
+			set {
+				_json.DateTime("created", value);
+			}
+		}
+
+		public int Size {
+			get {
+				return _json.Int32("size");
+			}
+			set {
+				_json.Int32("size", value);
 			}
 		}
 	}

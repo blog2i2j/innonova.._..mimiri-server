@@ -29,11 +29,14 @@ foreach (var allowedOrigin in allowedOrigins) {
 	Dev.Log(allowedOrigin);
 }
 
+
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddExceptionHandler<DevExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddSingleton<MimerServer>();
 
 builder.Services.AddControllers(options => {
@@ -53,13 +56,13 @@ builder.Services.AddCors(options => {
 
 var app = builder.Build();
 
-
+// Configure global exception handling for all environments
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) {
 	app.UseSwagger();
 	app.UseSwaggerUI();
-	app.UseExceptionHandler(_ => { });
 }
 
 app.UseCors("Main");

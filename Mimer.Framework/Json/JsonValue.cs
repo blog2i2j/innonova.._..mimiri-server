@@ -76,7 +76,12 @@ namespace Mimer.Framework.Json {
 
 		public JsonValue(long value) {
 			Value = value.ToString();
-			Type = JsonValueType.String;
+			if (value >= 9007199254740991 || value <= -9007199254740991) {
+				Type = JsonValueType.String;
+			}
+			else {
+				Type = JsonValueType.Simple;
+			}
 		}
 
 		public JsonValue(ulong value) {

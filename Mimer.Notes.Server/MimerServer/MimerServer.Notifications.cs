@@ -95,10 +95,13 @@ namespace Mimer.Notes.Server {
 			}
 		}
 
-		public async Task NotifySync() {
+		public async Task NotifySync(string syncId, Guid sender, List<Guid> recipients) {
 			try {
 				var serverRequest = new ServerNotificationRequest();
 				serverRequest.Type = "sync";
+				serverRequest.Sender = sender;
+				serverRequest.Recipients = string.Join(",", recipients);
+				serverRequest.Payload = syncId;
 				_signature.SignRequest("mimer", serverRequest);
 				var content = new StringContent(serverRequest.ToJsonString(), Encoding.UTF8, "application/json");
 				var response = await _httpClient.PostAsync($"{NotificationsUrl}/api/notification/send", content);

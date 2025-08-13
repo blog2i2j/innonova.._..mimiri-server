@@ -103,6 +103,12 @@ namespace Mimer.Notes.Model.Requests {
 			}
 		}
 
+		public string SyncId {
+			get {
+				return _json.String("syncId");
+			}
+		}
+
 		public List<NoteSyncAction> Notes {
 			get {
 				return _json.Array("notes").AsObjects().Select(json => new NoteSyncAction(json)).ToList();
@@ -157,7 +163,10 @@ namespace Mimer.Notes.Model.Requests {
 		public bool IsValid {
 			get {
 				try {
-					return !string.IsNullOrWhiteSpace(Username);
+					return !(
+						string.IsNullOrWhiteSpace(Username) ||
+						string.IsNullOrWhiteSpace(SyncId)
+					);
 				}
 				catch {
 					return false;

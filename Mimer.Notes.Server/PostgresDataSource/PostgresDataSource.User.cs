@@ -215,6 +215,7 @@ namespace Mimer.Notes.Server {
 		}
 
 		public async Task<bool> DeleteUser(Guid userId) {
+			// be aware that test cleanup is happening in payment service
 			try {
 				await using var connection = await _postgres.OpenConnectionAsync();
 				await using var transaction = await connection.BeginTransactionAsync();
@@ -238,6 +239,9 @@ namespace Mimer.Notes.Server {
 						count = await command.ExecuteNonQueryAsync();
 
 						command.CommandText = @"DELETE FROM mimer_note as note WHERE key_name = @key_name";
+						count = await command.ExecuteNonQueryAsync();
+
+						command.CommandText = @"DELETE FROM deleted_mimer_note WHERE key_name = @key_name";
 						count = await command.ExecuteNonQueryAsync();
 					}
 

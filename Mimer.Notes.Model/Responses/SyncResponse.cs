@@ -111,6 +111,7 @@ namespace Mimer.Notes.Model.Responses {
 				_json.Guid("keyName", value);
 			}
 		}
+
 		public DateTime Modified {
 			get {
 				return _json.DateTime("modified");
@@ -235,6 +236,7 @@ namespace Mimer.Notes.Model.Responses {
 			_json = new JsonObject();
 			_json.Array("notes", new JsonArray());
 			_json.Array("keys", new JsonArray());
+			_json.Array("deletedNotes", new JsonArray());
 		}
 
 		public SyncResponse(JsonObject json) {
@@ -253,6 +255,10 @@ namespace Mimer.Notes.Model.Responses {
 			_json.Array("keys").Add(key.Json);
 		}
 
+		public void AddDeletedNote(Guid noteId) {
+			_json.Array("deletedNotes").Add(noteId);
+		}
+
 		public int NoteCount {
 			get {
 				return _json.Int32("noteCount");
@@ -268,6 +274,42 @@ namespace Mimer.Notes.Model.Responses {
 			}
 			set {
 				_json.Int64("size", value);
+			}
+		}
+
+		public long MaxTotalBytes {
+			get {
+				return _json.Int64("maxTotalBytes");
+			}
+			set {
+				_json.Int64("maxTotalBytes", value);
+			}
+		}
+
+		public long MaxNoteBytes {
+			get {
+				return _json.Int64("maxNoteBytes");
+			}
+			set {
+				_json.Int64("maxNoteBytes", value);
+			}
+		}
+
+		public long MaxNoteCount {
+			get {
+				return _json.Int64("maxNoteCount");
+			}
+			set {
+				_json.Int64("maxNoteCount", value);
+			}
+		}
+
+		public long MaxHistoryEntries {
+			get {
+				return _json.Int64("maxHistoryEntries");
+			}
+			set {
+				_json.Int64("maxHistoryEntries", value);
 			}
 		}
 

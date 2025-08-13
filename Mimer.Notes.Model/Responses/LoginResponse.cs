@@ -80,6 +80,15 @@ namespace Mimer.Notes.Model.Responses {
 			}
 		}
 
+		public string Token {
+			get {
+				return _json.String("token");
+			}
+			set {
+				_json.String("token", value);
+			}
+		}
+
 		public string SymmetricAlgorithm {
 			get {
 				return _json.String("symmetricAlgorithm");

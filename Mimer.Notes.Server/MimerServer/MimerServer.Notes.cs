@@ -265,6 +265,10 @@ namespace Mimer.Notes.Server {
 						var response = new ReadNoteResponse();
 						response.Id = note.Id;
 						response.KeyName = note.KeyName;
+						response.Modified = note.Modified;
+						response.Created = note.Created;
+						response.Sync = note.Sync;
+						response.Size = note.Size;
 						var size = 0;
 						foreach (var item in note.Items) {
 							if (request.Include != "*") {
@@ -273,11 +277,11 @@ namespace Mimer.Notes.Server {
 								}
 							}
 							if (!request.isNewer(item.Type, item.Version)) {
-								response.AddItem(item.Version, item.Type);
+								response.AddItem(item.Version, item.Type, item.Created, item.Modified, item.Size);
 								continue;
 							}
 							size += item.Data.Length;
-							response.AddItem(item.Version, item.Type, item.Data);
+							response.AddItem(item.Version, item.Type, item.Data, item.Created, item.Modified, item.Size);
 						}
 						_userStatsManager.RegisterRead(user.Id, size);
 						return response;

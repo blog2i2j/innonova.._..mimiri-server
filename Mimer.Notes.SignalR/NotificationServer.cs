@@ -49,9 +49,6 @@ namespace Mimer.Notes.SignalR {
 					else if (request.Type == "blog-post") {
 						await _clients.All.SendAsync("notification", "", request.Type);
 					}
-					else if (request.Type == "sync") {
-						await _clients.All.SendAsync("notification", "", request.Type);
-					}
 					else {
 						string[] userIds = request.Recipients.Split(",");
 						List<string> connectionIds = new List<string>();

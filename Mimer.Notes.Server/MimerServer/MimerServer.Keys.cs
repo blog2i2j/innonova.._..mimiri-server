@@ -1,3 +1,4 @@
+using Mimer.Framework;
 using Mimer.Notes.Model.Cryptography;
 using Mimer.Notes.Model.DataTypes;
 using Mimer.Notes.Model.Requests;
@@ -9,7 +10,7 @@ namespace Mimer.Notes.Server {
 	/// </summary>
 	public partial class MimerServer {
 
-		public async Task<BasicResponse?> CreateKey(CreateKeyRequest request) {
+		public async Task<CreateKeyResponse?> CreateKey(CreateKeyRequest request) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
 			}
@@ -36,9 +37,25 @@ namespace Mimer.Notes.Server {
 					key.PrivateKey = request.PrivateKey;
 					key.KeyData = request.KeyData;
 					key.Metadata = request.Metadata;
-					if (await _dataSource.CreateKey(key)) {
-						return new BasicResponse();
+
+					var response = new CreateKeyResponse();
+					var userType = GetUserType(user.TypeId);
+					try {
+						if (await _dataSource.CreateKey(key, user.Id, (userType.MaxNoteCount, userType.MaxTotalBytes, userType.MaxNoteBytes))) {
+							response.Success = true;
+						}
+						else {
+							return null;
+						}
 					}
+					catch (LimitException ex) {
+						response.Success = false;
+						response.MaxCount = ex.Limits.MaxCount;
+						response.MaxSize = ex.Limits.MaxSize;
+						response.Count = ex.Limits.Count;
+						response.Size = ex.Limits.Size;
+					}
+					return response;
 				}
 			}
 			return null;
@@ -145,5 +162,11 @@ namespace Mimer.Notes.Server {
 			}
 			return null;
 		}
+
+
+
 	}
+
+
+
 }

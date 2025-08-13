@@ -55,6 +55,7 @@ namespace Mimer.Notes.Server {
 					response.Salt = user.Salt;
 					response.Iterations = user.Iterations;
 					response.Algorithm = user.Algorithm;
+					response.Token = user.PasswordToken;
 					response.SymmetricAlgorithm = user.SymmetricAlgorithm;
 					response.SymmetricKey = user.SymmetricKey;
 					response.Data = user.Data;
@@ -80,6 +81,9 @@ namespace Mimer.Notes.Server {
 			if (user != null) {
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
+					if (user.PasswordToken != "NO_TOKEN" && user.PasswordToken != request.GetSignature("TOKEN")) {
+						return null;
+					}
 					var userType = GetUserType(user.TypeId);
 					var response = new UserDataResponse();
 					response.Data = user.Data;
@@ -143,6 +147,7 @@ namespace Mimer.Notes.Server {
 			user.PasswordHash = request.PasswordHash;
 			user.PasswordIterations = request.PasswordIterations;
 			user.PasswordAlgorithm = request.PasswordAlgorithm;
+			user.PasswordToken = request.PasswordToken;
 			user.SymmetricAlgorithm = request.SymmetricAlgorithm;
 			user.SymmetricKey = request.SymmetricKey;
 			user.Data = request.Data;
@@ -169,7 +174,7 @@ namespace Mimer.Notes.Server {
 					}
 				}
 
-				// TODO remove response length 0 check at some point in the future (backwards compatability)
+				// TODO remove response length 0 check at some point in the future (backwards compatibility)
 				if (request.Response.Length == 0 || _challengeManager.ValidateChallenge(oldUser.Username, oldUser.PasswordHash, request.Response, request.HashLength)) {
 					var oldSigner = new CryptSignature(oldUser.AsymmetricAlgorithm, oldUser.PublicKey);
 					if (!oldSigner.VerifySignature("old-user", request)) {
@@ -190,6 +195,7 @@ namespace Mimer.Notes.Server {
 					user.PasswordHash = request.PasswordHash;
 					user.PasswordIterations = request.PasswordIterations;
 					user.PasswordAlgorithm = request.PasswordAlgorithm;
+					user.PasswordToken = request.PasswordToken;
 					user.SymmetricAlgorithm = request.SymmetricAlgorithm;
 					user.SymmetricKey = request.SymmetricKey;
 					user.Data = request.Data;

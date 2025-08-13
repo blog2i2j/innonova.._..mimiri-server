@@ -3,6 +3,8 @@
 	"editor.formatOnSave": true,
 	"window.title": "${dirty}Mimiri Server",
 	"cSpell.words": [
-		"Npgsql"
+		"nextval",
+		"Npgsql",
+		"plpgsql"
 	],
 }

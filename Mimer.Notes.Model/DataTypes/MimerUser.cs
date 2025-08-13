@@ -135,6 +135,18 @@ namespace Mimer.Notes.Model.DataTypes {
 			}
 		}
 
+		public string PasswordToken {
+			get {
+				return _json.Object("password").StringOrDefault("token", "NO_TOKEN");
+			}
+			set {
+				if (!_json.Has("password")) {
+					_json.Object("password", new JsonObject());
+				}
+				_json.Object("password").String("token", value);
+			}
+		}
+
 		public string SymmetricAlgorithm {
 			get {
 				return _json.String("symmetricAlgorithm");

@@ -14,15 +14,23 @@ namespace Mimer.Notes.Server {
 				if (signer.VerifySignature("user", request)) {
 					var response = new SyncResponse();
 
-					var (notes, keys) = await _dataSource.GetChangedDataSince(user.Id, request.NoteSince, request.KeySince);
+					var (notes, keys, deletedNotes) = await _dataSource.GetChangedDataSince(user.Id, request.NoteSince, request.KeySince);
+
+
+					if (notes == null || keys == null || deletedNotes == null) {
+						return null;
+					}
+
 					var userSize = await _dataSource.GetUserSize(user.Id);
 
 					response.NoteCount = (int)userSize.NoteCount;
 					response.Size = userSize.Size;
 
-					if (notes == null || keys == null) {
-						return null;
-					}
+					var userType = GetUserType(user.TypeId);
+					response.MaxTotalBytes = userType.MaxTotalBytes;
+					response.MaxNoteBytes = userType.MaxNoteBytes;
+					response.MaxNoteCount = userType.MaxNoteCount;
+					response.MaxHistoryEntries = userType.MaxHistoryEntries;
 
 					foreach (var note in notes) {
 						response.AddNote(note);
@@ -30,6 +38,10 @@ namespace Mimer.Notes.Server {
 
 					foreach (var key in keys) {
 						response.AddKey(key);
+					}
+
+					foreach (var deletedNote in deletedNotes) {
+						response.AddDeletedNote(deletedNote);
 					}
 
 					return response;
@@ -45,21 +57,30 @@ namespace Mimer.Notes.Server {
 			if (user != null) {
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
-					var results = await _dataSource.ApplyChanges(user.Id, request.Notes, request.Keys);
-					if (results == null) {
-						return null;
-					}
-					// TODO check success of results
-					if (results.Count > 0) {
-						await NotifySync();
-					}
-
 					var response = new SyncPushResponse();
+					if (request.Notes.Count == 0 && request.Keys.Count == 0) {
+						response.Status = "no-changes";
+						return response;
+					}
+					var userType = GetUserType(user.TypeId);
 
-					foreach (var result in results) {
-						response.AddSyncResult(result);
+					var status = await _dataSource.ApplyChanges(user.Id, request.Notes, request.Keys, (userType.MaxNoteCount, userType.MaxTotalBytes, userType.MaxNoteBytes));
+					if (status != "success") {
+						response.Status = status;
+						return response;
 					}
 
+					var affectedKeyNames = new HashSet<Guid>();
+					foreach (var key in request.Keys) {
+						affectedKeyNames.Add(key.Name);
+					}
+					foreach (var note in request.Notes) {
+						affectedKeyNames.Add(note.KeyName);
+					}
+
+					await NotifySync(request.SyncId, user.Id, await _dataSource.getOwningUsers(affectedKeyNames.ToList()));
+
+					response.Status = "success";
 					return response;
 				}
 			}

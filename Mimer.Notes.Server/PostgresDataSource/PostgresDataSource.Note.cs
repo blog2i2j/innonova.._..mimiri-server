@@ -58,6 +58,49 @@ namespace Mimer.Notes.Server {
 				      NULL;
 				END;$$;
 
+				CREATE TABLE IF NOT EXISTS public."deleted_mimer_note" (
+				  note_id uuid NOT NULL PRIMARY KEY,
+				  key_name uuid NOT NULL,
+				  created timestamp without time zone NOT NULL DEFAULT current_timestamp,
+				  sync bigint NOT NULL DEFAULT nextval('sync_sequence')
+				);
+
+				CREATE OR REPLACE FUNCTION log_note_deletion()
+				RETURNS TRIGGER AS $$
+				BEGIN
+					 INSERT INTO deleted_mimer_note (note_id, key_name) VALUES (OLD.id, OLD.key_name);
+					 RETURN NULL;
+				END;
+				$$ language 'plpgsql';
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER note_deletion_trigger
+				AFTER DELETE ON public."mimer_note"
+				FOR EACH ROW EXECUTE PROCEDURE log_note_deletion();
+				EXCEPTION
+					WHEN duplicate_object THEN
+						NULL;
+				END;$$;
+
+				CREATE OR REPLACE FUNCTION remove_from_deleted_notes()
+				RETURNS TRIGGER AS $$
+				BEGIN
+					DELETE FROM deleted_mimer_note WHERE note_id = NEW.id;
+					RETURN NEW;
+				END;
+				$$ language 'plpgsql';
+
+				DO
+				$$BEGIN
+				CREATE TRIGGER remove_deleted_note_trigger
+				AFTER INSERT ON public."mimer_note"
+				FOR EACH ROW EXECUTE PROCEDURE remove_from_deleted_notes();
+				EXCEPTION
+					 WHEN duplicate_object THEN
+						NULL;
+				END;$$;
+
 				CREATE OR REPLACE FUNCTION update_note_size()
 				RETURNS TRIGGER AS $$
 				BEGIN
@@ -238,7 +281,8 @@ namespace Mimer.Notes.Server {
 			try {
 				using var command = _postgres.CreateCommand();
 				command.CommandText = @"
-SELECT mimer_note.key_name, mimer_note_item.version, mimer_note_item.item_type, mimer_note_item.data
+SELECT mimer_note.key_name, mimer_note.created, mimer_note.modified, mimer_note.sync, mimer_note.size,
+			 mimer_note_item.version, mimer_note_item.item_type, mimer_note_item.data, mimer_note_item.created, mimer_note_item.modified, mimer_note_item.size
 FROM mimer_note
 INNER JOIN mimer_note_item ON mimer_note_item.note_id = mimer_note.id
 WHERE mimer_note.id = @id";
@@ -250,7 +294,11 @@ WHERE mimer_note.id = @id";
 				while (await reader.ReadAsync()) {
 					found = true;
 					note.KeyName = reader.GetGuid(0);
-					note.Items.Add(new DbNoteItem(reader.GetInt64(1), reader.GetString(2), reader.GetString(3)));
+					note.Created = reader.GetDateTime(1);
+					note.Modified = reader.GetDateTime(2);
+					note.Sync = reader.GetInt64(3);
+					note.Size = reader.GetInt32(4);
+					note.Items.Add(new DbNoteItem(reader.GetInt64(5), reader.GetString(6), reader.GetString(7), reader.GetDateTime(8), reader.GetDateTime(9), reader.GetInt32(10)));
 				}
 				if (found) {
 					return note;
