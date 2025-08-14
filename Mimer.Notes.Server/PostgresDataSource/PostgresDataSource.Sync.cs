@@ -8,6 +8,7 @@ using Mimer.Notes.Model.DataTypes;
 using Mimer.Notes.Model.Requests;
 using Mimer.Notes.Model.Responses;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Mimer.Notes.Server {
 
@@ -20,86 +21,78 @@ namespace Mimer.Notes.Server {
 		private const long SYSTEM_NOTE_COUNT = 3;
 
 		public async Task<(List<SyncNoteInfo>? notes, List<SyncKeyInfo>? keys, List<Guid>? deletedNotes)> GetChangedDataSince(Guid userId, long noteSince, long keySince) {
-			const int maxRetries = 3;
-			const int baseDelayMs = 100;
-
-			for (int attempt = 0; attempt <= maxRetries; attempt++) {
-				try {
-					return await GetChangedDataSinceInternal(userId, noteSince, keySince);
-				}
-				catch (PostgresException ex) when (IsSerializationError(ex) && attempt < maxRetries) {
-					var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt) + Random.Shared.Next(0, 50));
-					Dev.Log($"Serialization error (GetChangedDataSince) on attempt {attempt + 1}, retrying after {delay.TotalMilliseconds}ms: {ex.Message}");
-					await Task.Delay(delay);
-				}
-				catch (Exception ex) {
-					Dev.Log(ex);
-					return (null, null, null);
-				}
-			}
-
-			return (null, null, null);
-		}
-
-
-		private async Task<(List<SyncNoteInfo>? notes, List<SyncKeyInfo>? keys, List<Guid>? deletedNotes)> GetChangedDataSinceInternal(Guid userId, long noteSince, long keySince) {
 			var notes = new List<SyncNoteInfo>();
 			var keys = new List<SyncKeyInfo>();
 			var deletedNotes = new List<Guid>();
 
 			try {
 				await using var connection = await _postgres.OpenConnectionAsync();
-				await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Serializable);
+				await using var transaction = await connection.BeginTransactionAsync();
 
 				try {
 					await using var command = new NpgsqlCommand("", connection, transaction);
 					var notesMap = new Dictionary<Guid, SyncNoteInfo>();
+					var noteIds = new List<Guid>();
+
 					command.CommandText = @"
-			SELECT n.id, n.key_name, n.modified, n.created, n.sync, n.size, ni.item_type, ni.version, ni.data, ni.modified as item_modified, ni.created as item_created, ni.size as item_size
+			SELECT n.id, n.key_name, n.modified, n.created, n.sync, n.size
 			FROM mimer_note n
 			INNER JOIN mimer_key k ON k.key_name = n.key_name
-			LEFT JOIN mimer_note_item ni ON ni.note_id = n.id
 			WHERE k.user_id = @user_id AND n.sync > @since
-			ORDER BY n.sync ASC LIMIT 250";
+			ORDER BY n.sync ASC
+			LIMIT 250";
 					command.Parameters.AddWithValue("@user_id", userId);
 					command.Parameters.AddWithValue("@since", noteSince);
 
 					using (var reader = await command.ExecuteReaderAsync()) {
 						while (await reader.ReadAsync()) {
-							var noteId = reader.GetGuid(0);
-
-							if (!notesMap.ContainsKey(noteId)) {
-								notesMap[noteId] = new SyncNoteInfo {
-									Id = noteId,
+							var id = reader.GetGuid(0);
+							if (!notesMap.ContainsKey(id)) {
+								notesMap[id] = new SyncNoteInfo {
+									Id = id,
 									KeyName = reader.GetGuid(1),
 									Modified = reader.GetDateTime(2),
 									Created = reader.GetDateTime(3),
 									Sync = reader.GetInt64(4),
 									Size = (int)reader.GetInt64(5)
 								};
-							}
-
-							if (!reader.IsDBNull(6)) {
-								var noteItem = new SyncNoteItemInfo {
-									NoteId = noteId,
-									ItemType = reader.GetString(6),
-									Version = reader.GetInt64(7),
-									Data = reader.GetString(8),
-									Modified = reader.GetDateTime(9),
-									Created = reader.GetDateTime(10),
-									Size = (int)reader.GetInt64(11)
-								};
-								notesMap[noteId].AddItem(noteItem);
+								noteIds.Add(id);
 							}
 						}
 					}
-					notes.AddRange(notesMap.Values);
+
+					if (noteIds.Count > 0) {
+						command.Parameters.Clear();
+						command.CommandText = @"
+			SELECT ni.note_id, ni.item_type, ni.version, ni.data, ni.modified, ni.created, ni.size
+			FROM mimer_note_item ni
+			WHERE ni.note_id = ANY(@note_ids)";
+						command.Parameters.Add("@note_ids", NpgsqlDbType.Array | NpgsqlDbType.Uuid).Value = noteIds.ToArray();
+
+						using (var itemReader = await command.ExecuteReaderAsync()) {
+							while (await itemReader.ReadAsync()) {
+								var note = notesMap[itemReader.GetGuid(0)];
+								var noteItem = new SyncNoteItemInfo {
+									NoteId = note.Id,
+									ItemType = itemReader.GetString(1),
+									Version = itemReader.GetInt64(2),
+									Data = itemReader.GetString(3),
+									Modified = itemReader.GetDateTime(4),
+									Created = itemReader.GetDateTime(5),
+									Size = (int)itemReader.GetInt64(6)
+								};
+								note.AddItem(noteItem);
+							}
+						}
+						notes.AddRange(notesMap.Values);
+					}
+
 
 					command.CommandText = @"
 			SELECT id, key_name, data, created, modified, sync
 			FROM mimer_key
 			WHERE user_id = @user_id AND sync > @since
-			ORDER BY sync ASC LIMIT 250";
+			ORDER BY sync ASC LIMIT 25000";
 					command.Parameters.Clear();
 					command.Parameters.AddWithValue("@user_id", userId);
 					command.Parameters.AddWithValue("@since", keySince);
@@ -121,7 +114,8 @@ namespace Mimer.Notes.Server {
 			SELECT n.note_id FROM deleted_mimer_note n
 			INNER JOIN mimer_key k ON k.key_name = n.key_name
 			WHERE k.user_id = @user_id AND n.sync > @since
-			ORDER BY n.sync ASC LIMIT 250";
+			ORDER BY n.sync ASC LIMIT 25000";
+					command.Parameters.Clear();
 					command.Parameters.AddWithValue("@user_id", userId);
 					command.Parameters.AddWithValue("@since", noteSince);
 
@@ -146,29 +140,17 @@ namespace Mimer.Notes.Server {
 		}
 
 		public async Task<string> ApplyChanges(Guid userId, List<NoteSyncAction> noteActions, List<KeySyncAction> keyActions, (long MaxNoteCount, long MaxTotalBytes, long MaxNoteSize) stats) {
-			// Dev.Log($"Applying changes for user {userId}: {noteActions.Count} notes, {keyActions.Count} keys");
-			const int maxRetries = 3;
-			const int baseDelayMs = 100;
-
-			for (int attempt = 0; attempt <= maxRetries; attempt++) {
-				try {
-					await ApplyChangesCore(userId, noteActions, keyActions, stats);
-					return "success";
-				}
-				catch (PostgresException ex) when (IsSerializationError(ex) && attempt < maxRetries) {
-					var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt) + Random.Shared.Next(0, 50));
-					Dev.Log($"Serialization error (ApplyChanges) on attempt {attempt + 1}, retrying after {delay.TotalMilliseconds}ms: {ex.Message}");
-					await Task.Delay(delay);
-				}
-				catch (SyncException) {
-					return "conflict";
-				}
-				catch (Exception ex) {
-					Dev.Log(ex);
-					return "error";
-				}
+			try {
+				await ApplyChangesCore(userId, noteActions, keyActions, stats);
+				return "success";
 			}
-			return "no-changes";
+			catch (SyncException) {
+				return "conflict";
+			}
+			catch (Exception ex) {
+				Dev.Log(ex);
+				return "error";
+			}
 		}
 
 		private static bool IsSerializationError(PostgresException ex) {
@@ -178,7 +160,7 @@ namespace Mimer.Notes.Server {
 
 		private async Task ApplyChangesCore(Guid userId, List<NoteSyncAction> noteActions, List<KeySyncAction> keyActions, (long MaxNoteCount, long MaxTotalBytes, long MaxNoteSize) stats) {
 			await using var connection = await _postgres.OpenConnectionAsync();
-			await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Serializable);
+			await using var transaction = await connection.BeginTransactionAsync();
 
 			try {
 				await using var command = new NpgsqlCommand("", connection, transaction);
@@ -195,7 +177,8 @@ namespace Mimer.Notes.Server {
 			catch (PostgresException ex) when (IsSerializationError(ex)) {
 				throw;
 			}
-			catch {
+			catch (Exception ex) {
+				Dev.Log(ex);
 				try {
 					await transaction.RollbackAsync();
 				}

@@ -14,8 +14,12 @@ namespace Mimer.Notes.Server {
 				if (signer.VerifySignature("user", request)) {
 					var response = new SyncResponse();
 
-					var (notes, keys, deletedNotes) = await _dataSource.GetChangedDataSince(user.Id, request.NoteSince, request.KeySince);
-
+					List<SyncNoteInfo>? notes;
+					List<SyncKeyInfo>? keys;
+					List<Guid>? deletedNotes;
+					using (await TakeSyncReaderLock(user.Id)) {
+						(notes, keys, deletedNotes) = await _dataSource.GetChangedDataSince(user.Id, request.NoteSince, request.KeySince);
+					}
 
 					if (notes == null || keys == null || deletedNotes == null) {
 						return null;
@@ -49,6 +53,7 @@ namespace Mimer.Notes.Server {
 			}
 			return null;
 		}
+
 		public async Task<SyncPushResponse?> PushSync(SyncPushRequest request) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
@@ -64,10 +69,14 @@ namespace Mimer.Notes.Server {
 					}
 					var userType = GetUserType(user.TypeId);
 
-					var status = await _dataSource.ApplyChanges(user.Id, request.Notes, request.Keys, (userType.MaxNoteCount, userType.MaxTotalBytes, userType.MaxNoteBytes));
-					if (status != "success") {
-						response.Status = status;
-						return response;
+					var keyNames = request.Notes.Select(n => n.KeyName).Concat(request.Keys.Select(k => k.Name).ToList()).Distinct().ToArray();
+
+					using (await TakeSyncWriterLock(user.Id, keyNames)) {
+						var status = await _dataSource.ApplyChanges(user.Id, request.Notes, request.Keys, (userType.MaxNoteCount, userType.MaxTotalBytes, userType.MaxNoteBytes));
+						if (status != "success") {
+							response.Status = status;
+							return response;
+						}
 					}
 
 					var affectedKeyNames = new HashSet<Guid>();

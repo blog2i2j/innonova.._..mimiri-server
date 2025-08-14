@@ -305,5 +305,23 @@ WHERE k.id = @id
 			return result;
 		}
 
+		public async Task<List<Guid>> GetUserKeyNames(Guid userId) {
+			var result = new List<Guid>();
+			try {
+				using var command = _postgres.CreateCommand();
+				command.CommandText = @"SELECT DISTINCT key_name FROM mimer_key WHERE user_id = @user_id";
+				command.Parameters.AddWithValue("@user_id", userId);
+				using var reader = await command.ExecuteReaderAsync();
+				while (await reader.ReadAsync()) {
+					result.Add(reader.GetGuid(0));
+				}
+			}
+			catch (Exception ex) {
+				Dev.Log(_connectionString, ex);
+				throw;
+			}
+			return result;
+		}
+
 	}
 }
