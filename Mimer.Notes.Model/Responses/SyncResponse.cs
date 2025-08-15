@@ -313,6 +313,15 @@ namespace Mimer.Notes.Model.Responses {
 			}
 		}
 
+		public string Sha256 {
+			get {
+				return _json.String("sha256");
+			}
+			set {
+				_json.String("sha256", value);
+			}
+		}
+
 		public override string ToString() {
 			return _json.ToString(true);
 		}

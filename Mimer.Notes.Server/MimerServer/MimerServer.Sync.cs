@@ -1,6 +1,9 @@
+using Mimer.Framework;
 using Mimer.Notes.Model.Cryptography;
 using Mimer.Notes.Model.Requests;
 using Mimer.Notes.Model.Responses;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Mimer.Notes.Server {
 	public partial class MimerServer {
@@ -47,6 +50,7 @@ namespace Mimer.Notes.Server {
 					foreach (var deletedNote in deletedNotes) {
 						response.AddDeletedNote(deletedNote);
 					}
+					response.Sha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(response.ToJsonString())));
 
 					return response;
 				}
