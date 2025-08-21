@@ -93,7 +93,7 @@ namespace Mimer.Notes.WebApi.Controllers {
 		public async Task<IActionResult> GetUserData([FromBody] JsonObject json) {
 			try {
 				_server.RegisterAction(Info, "user/get-data");
-				var response = await _server.GetUserData(new BasicRequest(json));
+				var response = await _server.GetUserData(new BasicRequest(json), Info);
 				if (response != null) {
 					return Content(response.ToJsonString(), "text/plain", Encoding.UTF8);
 				}

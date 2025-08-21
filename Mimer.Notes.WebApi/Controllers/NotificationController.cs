@@ -18,7 +18,8 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("create-url")]
 		public async Task<IActionResult> CreateUrl([FromBody] JsonObject json) {
-			var response = await _server.CreateNotificationUrl(new BasicRequest(json));
+			_server.RegisterAction(Info, "notification/create-url");
+			var response = await _server.CreateNotificationUrl(new BasicRequest(json), Info);
 			if (response == null) {
 				return Conflict();
 			}
@@ -27,12 +28,14 @@ namespace Mimer.Notes.WebApi.Controllers {
 
 		[HttpPost("send")]
 		public IActionResult Send([FromBody] JsonObject json) {
+			_server.RegisterAction(Info, "notification/send");
 			return Content(new BasicResponse().ToJsonString(), "text/plain", Encoding.UTF8);
 		}
 
 		[HttpGet("notify-update")]
 		[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 		public async Task<IActionResult> NotifyUpdate() {
+			_server.RegisterAction(Info, "notification/notify-update");
 			await _server.NotifyUpdate();
 			return Content(new BasicResponse().ToJsonString(), "text/plain", Encoding.UTF8);
 		}

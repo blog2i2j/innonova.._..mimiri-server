@@ -30,7 +30,7 @@ namespace Mimer.Notes.Server {
 			}
 		}
 
-		public async Task<NotificationUrlResponse?> CreateNotificationUrl(BasicRequest request) {
+		public async Task<NotificationUrlResponse?> CreateNotificationUrl(BasicRequest request, ClientInfo clientInfo) {
 			if (!_requestValidator.ValidateRequest(request)) {
 				return null;
 			}
@@ -38,6 +38,9 @@ namespace Mimer.Notes.Server {
 			if (user != null) {
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
+					if (clientInfo.IsBundleVersionGreaterThanOrEqualTo("2.5.0") && user.PasswordToken != "NO_TOKEN" && user.PasswordToken != request.GetSignature("TOKEN")) {
+						return null;
+					}
 					var token = new MimerNotificationToken();
 					token.Url = $"{WebsocketUrl}/notifications";
 					token.Username = user.Username;

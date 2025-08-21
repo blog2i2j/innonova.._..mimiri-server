@@ -75,6 +75,23 @@ namespace Mimer.Notes.Server {
 			}
 		}
 
+		public bool IsBundleVersionGreaterThanOrEqualTo(string version) {
+			try {
+				var currentParts = BundleVersion.Split('.');
+				var targetParts = version.Split('.');
+				for (int i = 0; i < Math.Max(currentParts.Length, targetParts.Length); i++) {
+					int currentNum = i < currentParts.Length ? int.Parse(currentParts[i]) : 0;
+					int targetNum = i < targetParts.Length ? int.Parse(targetParts[i]) : 0;
+					if (currentNum > targetNum) return true;
+					if (currentNum < targetNum) return false;
+				}
+				return true;
+			}
+			catch {
+				return false;
+			}
+		}
+
 		public override string ToString() {
 			return $"Client: {Client}, Environment: {Environment}, BundleVersion: {BundleVersion}, HostVersion: {HostVersion}, ElectronVersion: {ElectronVersion}";
 		}

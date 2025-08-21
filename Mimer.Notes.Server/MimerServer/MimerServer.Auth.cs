@@ -73,7 +73,7 @@ namespace Mimer.Notes.Server {
 			return null;
 		}
 
-		public async Task<UserDataResponse?> GetUserData(BasicRequest request) {
+		public async Task<UserDataResponse?> GetUserData(BasicRequest request, ClientInfo clientInfo) {
 			if (!request.IsValid) { // challenge response ensures non repeatability here
 				return null;
 			}
@@ -81,7 +81,7 @@ namespace Mimer.Notes.Server {
 			if (user != null) {
 				var signer = new CryptSignature(user.AsymmetricAlgorithm, user.PublicKey);
 				if (signer.VerifySignature("user", request)) {
-					if (user.PasswordToken != "NO_TOKEN" && user.PasswordToken != request.GetSignature("TOKEN")) {
+					if (clientInfo.IsBundleVersionGreaterThanOrEqualTo("2.5.0") && user.PasswordToken != "NO_TOKEN" && user.PasswordToken != request.GetSignature("TOKEN")) {
 						return null;
 					}
 					var userType = GetUserType(user.TypeId);
